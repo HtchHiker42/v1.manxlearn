@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ManxLearn — Student Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#2563EB;--primary-dark:#1d4ed8;--primary-light:#dbeafe;
+  --secondary:#F59E0B;--secondary-dark:#d97706;--secondary-light:#fef3c7;
+  --accent:#EC4899;--accent-dark:#db2777;--accent-light:#fce7f3;
+  --success:#10B981;--success-dark:#059669;--success-light:#d1fae5;
+  --danger:#DC2626;--danger-dark:#b91c1c;
+  --bg:#EFF6FF;--fg:#0F172A;--muted:#F1F5FD;--border:#C7D9FA;
+  --font-h:'Baloo 2',cursive;--font-b:'Comic Neue',cursive;
+  --r:20px;--r-sm:12px;--r-lg:28px;
+  --shadow-clay:0 4px 0 var(--border),0 8px 24px rgba(37,99,235,.1);
+}
+body{font-family:var(--font-b);background:var(--bg);color:var(--fg);min-height:100vh;overflow-x:hidden}
+.hidden{display:none!important}
+
+/* ── Top Bar ── */
+#topbar{background:#fff;border-bottom:3px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-family:var(--font-h);font-weight:800;font-size:1.3rem;color:var(--primary);display:flex;align-items:center;gap:8px;text-decoration:none}
+.logo span{background:var(--primary);color:#fff;border-radius:8px;padding:1px 8px;font-size:.9rem}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.xp-pill{background:var(--secondary-light);border:2px solid var(--secondary);border-radius:999px;padding:5px 14px;font-family:var(--font-h);font-weight:700;font-size:.9rem;color:var(--secondary-dark);display:flex;align-items:center;gap:5px}
+.avatar-btn{width:36px;height:36px;border-radius:50%;background:var(--primary-light);border:3px solid var(--primary);cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;font-family:var(--font-h);font-weight:800;color:var(--primary)}
+
+/* ── Buttons ── */
+.btn{font-family:var(--font-h);font-weight:700;border:none;cursor:pointer;border-radius:var(--r-sm);padding:12px 24px;font-size:1rem;transition:transform 150ms ease-out,box-shadow 150ms ease-out;display:inline-flex;align-items:center;gap:8px;text-decoration:none;justify-content:center}
+.btn:active{transform:translateY(2px)!important}
+.btn-primary{background:var(--primary);color:#fff;border:3px solid var(--primary-dark);box-shadow:0 4px 0 var(--primary-dark)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 5px 0 var(--primary-dark)}
+.btn-success{background:var(--success);color:#fff;border:3px solid var(--success-dark);box-shadow:0 4px 0 var(--success-dark)}
+.btn-success:hover{transform:translateY(-1px);box-shadow:0 5px 0 var(--success-dark)}
+.btn-secondary{background:var(--secondary);color:#fff;border:3px solid var(--secondary-dark);box-shadow:0 4px 0 var(--secondary-dark)}
+.btn-secondary:hover{transform:translateY(-1px);box-shadow:0 5px 0 var(--secondary-dark)}
+.btn-outline{background:#fff;color:var(--primary);border:3px solid var(--border);box-shadow:0 4px 0 var(--border)}
+.btn-outline:hover{transform:translateY(-1px);box-shadow:0 5px 0 var(--border)}
+.btn-danger{background:var(--danger);color:#fff;border:3px solid var(--danger-dark);box-shadow:0 4px 0 var(--danger-dark)}
+.btn-lg{padding:16px 32px;font-size:1.1rem;border-radius:var(--r)}
+.btn-full{width:100%}
+.btn:disabled{opacity:.5;pointer-events:none}
+
+/* ── Card ── */
+.card{background:#fff;border:3px solid var(--border);border-radius:var(--r);padding:28px;box-shadow:var(--shadow-clay)}
+
+/* ── Views ── */
+.view{display:none;min-height:100vh;padding:28px 20px;max-width:640px;margin:0 auto}
+.view.active{display:block}
+
+/* ────────────────────────────────────────────
+   VIEW: LOGIN
+─────────────────────────────────────────── */
+#view-login{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;max-width:440px}
+#view-login.active{display:flex}
+.login-hero{text-align:center;margin-bottom:28px}
+.login-mascot{font-size:4.5rem;display:block;margin-bottom:12px;animation:bob 3s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.login-hero h1{font-family:var(--font-h);font-size:2rem;font-weight:800;margin-bottom:6px}
+.login-hero p{color:#64748b;font-size:.95rem}
+.tabs{display:flex;background:var(--muted);border-radius:var(--r-sm);padding:4px;margin-bottom:20px;border:2px solid var(--border)}
+.tab-btn{flex:1;padding:10px;font-family:var(--font-h);font-weight:700;font-size:.95rem;border:none;background:transparent;border-radius:10px;cursor:pointer;color:#64748b;transition:all 200ms}
+.tab-btn.active{background:#fff;color:var(--primary);box-shadow:0 2px 8px rgba(37,99,235,.12)}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-family:var(--font-h);font-weight:700;font-size:.9rem;margin-bottom:6px;color:var(--fg)}
+.form-group input{width:100%;padding:13px 16px;border:3px solid var(--border);border-radius:var(--r-sm);font-family:var(--font-b);font-size:1rem;background:#fff;color:var(--fg);transition:border-color 150ms;outline:none}
+.form-group input:focus{border-color:var(--primary)}
+.form-group .hint{font-size:.8rem;color:#94a3b8;margin-top:5px}
+.error-msg{background:#fef2f2;border:2px solid #fecaca;border-radius:10px;padding:10px 14px;font-size:.88rem;color:var(--danger);margin-bottom:12px;display:none}
+.error-msg.show{display:block}
+
+/* ────────────────────────────────────────────
+   VIEW: HOME (Unit Journey Map)
+─────────────────────────────────────────── */
+.home-header{text-align:center;margin-bottom:32px}
+.home-header h2{font-family:var(--font-h);font-size:1.7rem;font-weight:800;margin-bottom:4px}
+.home-header p{color:#64748b}
+.xp-bar-wrap{margin:16px 0;background:var(--muted);border:2px solid var(--border);border-radius:999px;height:18px;overflow:hidden}
+.xp-bar-fill{height:100%;background:linear-gradient(90deg,var(--secondary),var(--accent));border-radius:999px;transition:width 600ms ease-out}
+.xp-label{font-family:var(--font-h);font-size:.8rem;color:#64748b;text-align:right;margin-top:4px}
+
+.journey{display:flex;flex-direction:column;align-items:center;gap:0;position:relative;padding-bottom:40px}
+.journey-connector{width:4px;height:48px;background:var(--border);border-radius:2px;margin:0 auto}
+.unit-node{width:100%;max-width:380px}
+
+.unit-card{background:#fff;border:3px solid var(--border);border-radius:var(--r-lg);padding:24px 20px;text-align:center;cursor:pointer;box-shadow:var(--shadow-clay);transition:transform 200ms,box-shadow 200ms;position:relative}
+.unit-card:hover:not(.locked){transform:translateY(-3px);box-shadow:0 7px 0 var(--border),0 14px 30px rgba(37,99,235,.13)}
+.unit-card.locked{opacity:.55;cursor:not-allowed}
+.unit-card.active-unit{border-color:var(--primary)}
+.unit-emoji{font-size:3rem;display:block;margin-bottom:10px}
+.unit-title{font-family:var(--font-h);font-size:1.15rem;font-weight:800;margin-bottom:6px}
+.unit-sub{font-size:.85rem;color:#64748b;margin-bottom:14px}
+.unit-progress-dots{display:flex;gap:6px;justify-content:center;margin-bottom:14px}
+.dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--border);background:var(--muted);transition:background 300ms}
+.dot.done{background:var(--success);border-color:var(--success-dark)}
+.dot.current{background:var(--primary);border-color:var(--primary-dark);animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(37,99,235,.4)}50%{box-shadow:0 0 0 6px rgba(37,99,235,0)}}
+.unit-badge{position:absolute;top:-10px;right:16px;background:var(--success);color:#fff;font-family:var(--font-h);font-weight:700;font-size:.75rem;border-radius:999px;padding:3px 10px;border:2px solid var(--success-dark)}
+.lock-icon{font-size:1.5rem;margin-bottom:6px}
+
+/* Classroom banner */
+.classroom-banner{background:var(--primary-light);border:2px solid var(--primary);border-radius:var(--r-sm);padding:12px 16px;margin-bottom:24px;display:flex;align-items:center;gap:10px;font-size:.9rem}
+.classroom-banner strong{font-family:var(--font-h)}
+
+/* Assignment badge */
+.asgn-strip{background:var(--secondary-light);border:2px solid var(--secondary);border-radius:var(--r-sm);padding:12px 16px;margin-bottom:24px;font-size:.88rem}
+.asgn-strip h4{font-family:var(--font-h);font-weight:700;margin-bottom:4px;color:var(--secondary-dark)}
+
+/* Join classroom */
+.join-form{display:flex;gap:10px;margin-top:12px}
+.join-form input{flex:1;padding:10px 14px;border:3px solid var(--border);border-radius:var(--r-sm);font-family:var(--font-b);font-size:.95rem;outline:none}
+.join-form input:focus{border-color:var(--primary)}
+
+/* ────────────────────────────────────────────
+   VIEW: UNIT DETAIL
+─────────────────────────────────────────── */
+.back-row{display:flex;align-items:center;gap:10px;margin-bottom:20px;cursor:pointer;font-family:var(--font-h);font-weight:700;color:var(--primary);font-size:.95rem}
+.back-row svg{flex-shrink:0}
+.unit-detail-header{text-align:center;padding:24px;background:#fff;border:3px solid var(--border);border-radius:var(--r-lg);margin-bottom:24px;box-shadow:var(--shadow-clay)}
+.unit-detail-emoji{font-size:3.5rem;margin-bottom:8px;display:block}
+.unit-detail-header h2{font-family:var(--font-h);font-size:1.5rem;font-weight:800;margin-bottom:4px}
+.lesson-list{display:flex;flex-direction:column;gap:12px}
+.lesson-row{background:#fff;border:3px solid var(--border);border-radius:var(--r);padding:16px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 3px 0 var(--border);transition:transform 150ms,box-shadow 150ms}
+.lesson-row:hover{transform:translateY(-2px);box-shadow:0 5px 0 var(--border)}
+.lesson-row.completed{border-color:var(--success);background:var(--success-light)}
+.lesson-row.locked{opacity:.5;cursor:not-allowed}
+.lesson-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;border:2px solid transparent}
+.lesson-icon.type-matchup{background:var(--primary-light);border-color:var(--primary)}
+.lesson-icon.type-pattern{background:var(--accent-light);border-color:var(--accent)}
+.lesson-icon.type-milestone{background:var(--secondary-light);border-color:var(--secondary)}
+.lesson-row .lesson-info{flex:1}
+.lesson-row .lesson-info h4{font-family:var(--font-h);font-weight:700;font-size:1rem;margin-bottom:2px}
+.lesson-row .lesson-info p{font-size:.82rem;color:#64748b}
+.lesson-check{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.9rem}
+.lesson-check.done{background:var(--success);border-color:var(--success-dark);color:#fff}
+
+.unit-test-row{background:var(--primary);border:3px solid var(--primary-dark);border-radius:var(--r);padding:18px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 0 var(--primary-dark);transition:transform 150ms;margin-top:20px;color:#fff}
+.unit-test-row:hover{transform:translateY(-2px);box-shadow:0 6px 0 var(--primary-dark)}
+.unit-test-row h4{font-family:var(--font-h);font-weight:800;font-size:1rem;margin-bottom:2px}
+.unit-test-row p{font-size:.82rem;opacity:.85}
+.best-score{background:var(--secondary-light);border:2px solid var(--secondary);border-radius:999px;padding:4px 10px;font-family:var(--font-h);font-weight:700;font-size:.8rem;color:var(--secondary-dark);white-space:nowrap;margin-left:auto}
+
+/* ────────────────────────────────────────────
+   VIEW: MATCHUP EXERCISE
+─────────────────────────────────────────── */
+.exercise-header{text-align:center;margin-bottom:24px}
+.exercise-header .prog{font-family:var(--font-h);font-size:.85rem;color:#64748b;margin-bottom:8px}
+.progress-bar-wrap{height:10px;background:var(--muted);border-radius:999px;border:2px solid var(--border);overflow:hidden;margin-bottom:16px}
+.progress-bar-fill{height:100%;background:var(--primary);border-radius:999px;transition:width 400ms ease-out}
+.exercise-header h3{font-family:var(--font-h);font-size:1.3rem;font-weight:800}
+.exercise-header p{color:#64748b;font-size:.9rem}
+
+/* Matchup grid */
+.matchup-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.match-col{display:flex;flex-direction:column;gap:10px}
+.match-item{background:#fff;border:3px solid var(--border);border-radius:var(--r-sm);padding:13px 16px;text-align:center;cursor:pointer;font-family:var(--font-h);font-weight:700;font-size:.95rem;transition:all 150ms;box-shadow:0 3px 0 var(--border)}
+.match-item:hover{transform:translateY(-1px);box-shadow:0 4px 0 var(--border)}
+.match-item.selected{border-color:var(--primary);background:var(--primary-light);box-shadow:0 3px 0 var(--primary-dark)}
+.match-item.matched-correct{border-color:var(--success);background:var(--success-light);color:var(--success-dark);box-shadow:0 3px 0 var(--success-dark);cursor:default;pointer-events:none}
+.match-item.matched-wrong{border-color:var(--danger);background:#fef2f2;animation:shake .3s ease-in-out}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.match-col-label{font-family:var(--font-h);font-weight:700;font-size:.8rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;text-align:center;margin-bottom:4px}
+
+/* Pattern exercise */
+.pattern-card{background:#fff;border:3px solid var(--border);border-radius:var(--r-lg);padding:28px;text-align:center;margin-bottom:20px;box-shadow:var(--shadow-clay)}
+.pattern-sentence{font-family:var(--font-h);font-size:1.6rem;font-weight:800;margin-bottom:8px;color:var(--fg)}
+.pattern-translation{color:#94a3b8;font-size:.9rem;margin-bottom:20px}
+.pattern-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt-btn{background:#fff;border:3px solid var(--border);border-radius:var(--r-sm);padding:14px;font-family:var(--font-h);font-weight:700;font-size:1rem;cursor:pointer;box-shadow:0 3px 0 var(--border);transition:all 150ms;color:var(--fg)}
+.opt-btn:hover{transform:translateY(-1px);box-shadow:0 4px 0 var(--border);border-color:var(--primary)}
+.opt-btn.correct{background:var(--success-light);border-color:var(--success);color:var(--success-dark);box-shadow:0 3px 0 var(--success-dark)}
+.opt-btn.wrong{background:#fef2f2;border-color:var(--danger);color:var(--danger);animation:shake .3s}
+
+/* Feedback bar */
+.feedback-bar{border-radius:var(--r);padding:18px 20px;display:flex;align-items:center;gap:14px;margin-bottom:16px;display:none}
+.feedback-bar.show{display:flex}
+.feedback-bar.correct{background:var(--success-light);border:3px solid var(--success)}
+.feedback-bar.wrong{background:#fef2f2;border:3px solid #fecaca}
+.fb-icon{font-size:1.8rem;flex-shrink:0}
+.fb-text h4{font-family:var(--font-h);font-weight:800;font-size:1rem}
+.fb-text p{font-size:.85rem;color:#64748b}
+
+/* ────────────────────────────────────────────
+   VIEW: MILESTONE
+─────────────────────────────────────────── */
+.milestone-card{background:#fff;border:3px solid var(--secondary);border-radius:var(--r-lg);padding:32px 24px;text-align:center;box-shadow:0 4px 0 var(--secondary-dark),0 10px 30px rgba(245,158,11,.12);margin-bottom:20px}
+.milestone-icon{font-size:4rem;display:block;margin-bottom:16px;animation:bob 3s ease-in-out infinite}
+.milestone-card h2{font-family:var(--font-h);font-size:1.5rem;font-weight:800;margin-bottom:8px}
+.milestone-card .concept{display:inline-block;background:var(--secondary-light);border:2px solid var(--secondary);border-radius:999px;padding:4px 14px;font-family:var(--font-h);font-weight:700;font-size:.85rem;color:var(--secondary-dark);margin-bottom:20px}
+.milestone-explanation{background:var(--muted);border:2px solid var(--border);border-radius:var(--r-sm);padding:20px;text-align:left;line-height:1.8;font-size:.95rem;color:#334155;margin-bottom:20px}
+
+/* ────────────────────────────────────────────
+   VIEW: UNIT TEST
+─────────────────────────────────────────── */
+.test-q-header{text-align:center;margin-bottom:24px}
+.test-q-header .q-count{font-family:var(--font-h);font-weight:700;color:#64748b;font-size:.9rem;margin-bottom:8px}
+.test-question{background:#fff;border:3px solid var(--border);border-radius:var(--r-lg);padding:28px;text-align:center;margin-bottom:20px;box-shadow:var(--shadow-clay)}
+.test-question h3{font-family:var(--font-h);font-size:1.3rem;font-weight:800;margin-bottom:6px}
+.test-options{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.test-opt{background:#fff;border:3px solid var(--border);border-radius:var(--r-sm);padding:15px 18px;text-align:left;font-family:var(--font-h);font-weight:700;font-size:1rem;cursor:pointer;box-shadow:0 3px 0 var(--border);transition:all 150ms;color:var(--fg);display:flex;align-items:center;gap:12px}
+.test-opt:hover:not(:disabled){border-color:var(--primary);background:var(--primary-light);box-shadow:0 3px 0 var(--primary-dark)}
+.test-opt.correct{background:var(--success-light);border-color:var(--success);box-shadow:0 3px 0 var(--success-dark)}
+.test-opt.wrong{background:#fef2f2;border-color:var(--danger)}
+.test-opt-letter{width:30px;height:30px;border-radius:8px;background:var(--muted);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0}
+.test-opt.correct .test-opt-letter{background:var(--success);border-color:var(--success-dark);color:#fff}
+.test-opt.wrong .test-opt-letter{background:var(--danger);border-color:var(--danger-dark);color:#fff}
+
+/* ────────────────────────────────────────────
+   VIEW: TEST RESULTS
+─────────────────────────────────────────── */
+.results-view{text-align:center}
+.score-ring-wrap{margin:20px auto;position:relative;width:160px;height:160px}
+.score-ring-svg{transform:rotate(-90deg)}
+.score-ring-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score-ring-text .big{font-family:var(--font-h);font-size:2.4rem;font-weight:800;color:var(--primary)}
+.score-ring-text .label{font-size:.8rem;color:#94a3b8;font-family:var(--font-h)}
+.results-msg{font-family:var(--font-h);font-size:1.5rem;font-weight:800;margin:16px 0 8px}
+.results-sub{color:#64748b;margin-bottom:24px}
+.history-list{text-align:left;background:var(--muted);border:2px solid var(--border);border-radius:var(--r-sm);padding:16px;margin:20px 0}
+.history-list h4{font-family:var(--font-h);font-weight:700;margin-bottom:10px;font-size:.9rem}
+.history-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:.88rem}
+.history-item:last-child{border-bottom:none}
+.h-score{font-family:var(--font-h);font-weight:700}
+.results-actions{display:flex;gap:12px;flex-wrap:wrap}
+
+/* ── Confetti ── */
+.confetti-piece{position:fixed;width:10px;height:10px;pointer-events:none;animation:confetti-fall 2.5s ease-out forwards}
+@keyframes confetti-fall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e293b;color:#fff;font-family:var(--font-h);font-weight:700;padding:12px 24px;border-radius:999px;font-size:.9rem;transition:transform 300ms ease-out;z-index:999;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div id="topbar" class="hidden">
+  <a class="logo" href="index.html"><span>ML</span> ManxLearn</a>
+  <div class="topbar-right">
+    <div class="xp-pill" id="xp-display">⭐ 0 XP</div>
+    <div class="avatar-btn" id="avatar-btn" title="Log out"></div>
+  </div>
+</div>
+
+<!-- ── VIEW: LOGIN ── -->
+<div id="view-login" class="view active">
+  <div class="login-hero">
+    <span class="login-mascot">🦤</span>
+    <h1>Welcome back!</h1>
+    <p>Log in or create your account to start learning Manx</p>
+  </div>
+  <div class="card" style="width:100%">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('login')">Log In</button>
+      <button class="tab-btn" onclick="switchTab('register')">New Account</button>
+    </div>
+    <div id="err-login" class="error-msg"></div>
+
+    <!-- Login form -->
+    <form id="form-login" onsubmit="doLogin(event)">
+      <div class="form-group">
+        <label for="l-username">Username</label>
+        <input id="l-username" type="text" placeholder="e.g. finn_mac" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label for="l-password">Password</label>
+        <input id="l-password" type="password" autocomplete="current-password" placeholder="Your secret password" required>
+        <div class="hint">Try: finn_mac / student123 (demo)</div>
+      </div>
+      <button class="btn btn-primary btn-full btn-lg" type="submit" id="btn-login">Log In</button>
+    </form>
+
+    <!-- Register form -->
+    <form id="form-register" class="hidden" onsubmit="doRegister(event)">
+      <div class="form-group">
+        <label for="r-username">Choose a Username</label>
+        <input id="r-username" type="text" placeholder="e.g. finn_mac" autocomplete="username" required>
+        <div class="hint">No email needed — just pick something you'll remember!</div>
+      </div>
+      <div class="form-group">
+        <label for="r-password">Choose a Password</label>
+        <input id="r-password" type="password" autocomplete="new-password" placeholder="Make it secret!" required minlength="6">
+      </div>
+      <button class="btn btn-success btn-full btn-lg" type="submit" id="btn-register">Create Account</button>
+    </form>
+  </div>
+  <p style="text-align:center;margin-top:16px;font-size:.85rem;color:#94a3b8">
+    Are you a teacher? <a href="teacher.html" style="color:var(--primary);font-weight:700">Teacher portal →</a>
+  </p>
+</div>
+
+<!-- ── VIEW: HOME ── -->
+<div id="view-home" class="view">
+  <div class="home-header">
+    <h2 id="home-greeting">Moghrey mie, Learner!</h2>
+    <p>Keep going — you're doing amazing! 🌟</p>
+    <div class="xp-bar-wrap"><div class="xp-bar-fill" id="xp-bar" style="width:0%"></div></div>
+    <div class="xp-label" id="xp-label">0 / 300 XP to next level</div>
+  </div>
+
+  <div id="classroom-banner" class="classroom-banner hidden">
+    <span>🏫</span>
+    <div><strong id="cls-name-banner">Class</strong> — your teacher can see your progress!</div>
+  </div>
+
+  <div id="asgn-strip" class="asgn-strip hidden">
+    <h4>📋 Assignment due soon</h4>
+    <div id="asgn-content"></div>
+  </div>
+
+  <div id="join-banner" class="card" style="margin-bottom:24px;display:none">
+    <p style="font-family:var(--font-h);font-weight:700;margin-bottom:8px">🏫 Join your classroom</p>
+    <p style="font-size:.88rem;color:#64748b;margin-bottom:10px">Ask your teacher for the invite code</p>
+    <div class="join-form">
+      <input id="invite-code-input" type="text" placeholder="e.g. MANX4B" maxlength="8" style="text-transform:uppercase;letter-spacing:.1em" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+      <button class="btn btn-primary" id="btn-join" onclick="doJoinClass()">Join</button>
+    </div>
+    <div id="join-error" class="error-msg" style="margin-top:8px"></div>
+  </div>
+
+  <div class="journey" id="unit-journey"></div>
+</div>
+
+<!-- ── VIEW: UNIT DETAIL ── -->
+<div id="view-unit" class="view">
+  <div class="back-row" onclick="showView('home')">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Back to Journey
+  </div>
+  <div class="unit-detail-header" id="unit-detail-header"></div>
+  <div class="lesson-list" id="lesson-list"></div>
+</div>
+
+<!-- ── VIEW: EXERCISE (matchup / pattern) ── -->
+<div id="view-exercise" class="view">
+  <div class="back-row" onclick="exitLesson()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Exit Lesson
+  </div>
+  <div class="exercise-header">
+    <div class="prog" id="ex-prog">Lesson 1</div>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="ex-prog-bar" style="width:0%"></div></div>
+    <h3 id="ex-title">Match the pairs</h3>
+    <p id="ex-subtitle">Tap a Manx word, then its English meaning</p>
+  </div>
+  <div id="feedback-bar" class="feedback-bar">
+    <div class="fb-icon" id="fb-icon"></div>
+    <div class="fb-text"><h4 id="fb-heading"></h4><p id="fb-body"></p></div>
+  </div>
+  <div id="exercise-body"></div>
+  <button class="btn btn-primary btn-full btn-lg hidden" id="btn-next-ex" onclick="nextExerciseStep()">Continue →</button>
+</div>
+
+<!-- ── VIEW: MILESTONE ── -->
+<div id="view-milestone" class="view">
+  <div class="back-row" onclick="exitLesson()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Back to Unit
+  </div>
+  <div class="milestone-card">
+    <span class="milestone-icon">📖</span>
+    <h2 id="ms-title">Grammar Milestone</h2>
+    <span class="concept" id="ms-concept"></span>
+    <div class="milestone-explanation" id="ms-explanation"></div>
+    <button class="btn btn-secondary btn-full btn-lg" onclick="completeMilestone()">Got it! ✓</button>
+  </div>
+</div>
+
+<!-- ── VIEW: UNIT TEST ── -->
+<div id="view-test" class="view">
+  <div class="back-row" onclick="exitLesson()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Exit Test
+  </div>
+  <div class="test-q-header">
+    <div class="q-count" id="test-q-count">Question 1 of 5</div>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="test-prog-bar" style="width:0%"></div></div>
+  </div>
+  <div class="test-question">
+    <h3 id="test-q-text"></h3>
+    <div class="test-options" id="test-options"></div>
+  </div>
+  <div id="feedback-bar-test" class="feedback-bar"></div>
+  <button class="btn btn-primary btn-full btn-lg hidden" id="btn-next-test" onclick="nextTestQuestion()">Next Question →</button>
+</div>
+
+<!-- ── VIEW: RESULTS ── -->
+<div id="view-results" class="view">
+  <div class="results-view">
+    <div style="font-size:3rem;margin-bottom:8px" id="results-emoji">🎉</div>
+    <div class="score-ring-wrap">
+      <svg class="score-ring-svg" width="160" height="160" viewBox="0 0 160 160">
+        <circle cx="80" cy="80" r="64" fill="none" stroke="#e4ecfc" stroke-width="12"/>
+        <circle id="score-ring" cx="80" cy="80" r="64" fill="none" stroke="#2563EB" stroke-width="12"
+          stroke-dasharray="402" stroke-dashoffset="402" stroke-linecap="round"
+          style="transition:stroke-dashoffset 1s ease-out"/>
+      </svg>
+      <div class="score-ring-text">
+        <span class="big" id="score-pct">0%</span>
+        <span class="label">Score</span>
+      </div>
+    </div>
+    <div class="results-msg" id="results-msg">Great job!</div>
+    <div class="results-sub" id="results-sub">You answered 4 out of 5 correctly.</div>
+    <div class="history-list" id="results-history"></div>
+    <div class="results-actions">
+      <button class="btn btn-outline btn-lg" style="flex:1" onclick="retakeTest()">Retake Test</button>
+      <button class="btn btn-primary btn-lg" style="flex:1" onclick="showView('home')">Back to Journey</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="shared.js"></script>
+<script>
+// ── State ──────────────────────────────────────────────
+let state = {
+  user: null, session: null,
+  activeUnit: null, activeLesson: null,
+  matchSel: { left: null, right: null },
+  matchPairs: [], matchDone: [],
+  patternIdx: 0, patternAnswered: false,
+  testQuestions: [], testIdx: 0, testAnswers: [],
+  currentTestUnitId: null
+};
+
+// ── Init ──────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  await ML.ensureReady();
+  const sess = ML.currentSession();
+  if (sess && sess.role === 'student') {
+    const user = ML.getUser(sess.userId);
+    if (user) { state.user = user; state.session = sess; enterApp(); return; }
+  }
+  showView('login');
+});
+
+function enterApp() {
+  document.getElementById('topbar').classList.remove('hidden');
+  const init = state.user.username.charAt(0).toUpperCase();
+  document.getElementById('avatar-btn').textContent = init;
+  document.getElementById('avatar-btn').onclick = doLogout;
+  renderHome();
+  showView('home');
+}
+
+// ── Auth ──────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', (i===0 && tab==='login')||(i===1 && tab==='register')));
+  document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
+  document.getElementById('form-register').classList.toggle('hidden', tab !== 'register');
+  document.getElementById('err-login').classList.remove('show');
+}
+
+async function doLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true; btn.textContent = 'Logging in…';
+  const res = await ML.loginUser({ username: document.getElementById('l-username').value.trim(), password: document.getElementById('l-password').value });
+  if (res.error) { showError('err-login', res.error); btn.disabled=false; btn.textContent='Log In'; return; }
+  if (res.user.role !== 'student') { showError('err-login', 'This is the student portal. Go to teacher.html'); btn.disabled=false; btn.textContent='Log In'; return; }
+  state.user = res.user; state.session = ML.currentSession();
+  enterApp();
+}
+
+async function doRegister(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-register');
+  btn.disabled = true; btn.textContent = 'Creating…';
+  const username = document.getElementById('r-username').value.trim();
+  const password = document.getElementById('r-password').value;
+  const res = await ML.registerUser({ username, password, role: 'student', displayName: username });
+  if (res.error) { showError('err-login', res.error); btn.disabled=false; btn.textContent='Create Account'; return; }
+  const loginRes = await ML.loginUser({ username, password });
+  if (loginRes.error || !loginRes.user) { showError('err-login', loginRes.error || 'Login failed after registration'); btn.disabled=false; btn.textContent='Create Account'; return; }
+  state.user = loginRes.user; state.session = ML.currentSession();
+  enterApp();
+}
+
+function doLogout() { ML.logoutUser(); location.reload(); }
+
+// ── View router ────────────────────────────────────────
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ── Home ──────────────────────────────────────────────
+function renderHome() {
+  // Greeting by time of day
+  const h = new Date().getHours();
+  const greet = h < 12 ? 'Moghrey mie' : h < 18 ? 'Fastyr mie' : 'Oie vie';
+  document.getElementById('home-greeting').textContent = `${greet}, ${state.user.username}!`;
+
+  // Total XP
+  let totalXP = 0;
+  ML.CURRICULUM.forEach(u => { const p = ML.getProgress(state.user.id, u.id); totalXP += p.xp||0; });
+  document.getElementById('xp-display').textContent = `⭐ ${totalXP} XP`;
+  const pct = Math.min(100, (totalXP % 300) / 3);
+  document.getElementById('xp-bar').style.width = pct + '%';
+  document.getElementById('xp-label').textContent = `${totalXP % 300} / 300 XP to next level`;
+
+  // Classroom
+  const cls = ML.getStudentClassroom(state.user.id);
+  const joinBanner = document.getElementById('join-banner');
+  const clsBanner = document.getElementById('classroom-banner');
+  if (cls) {
+    clsBanner.classList.remove('hidden');
+    document.getElementById('cls-name-banner').textContent = cls.name;
+    joinBanner.style.display = 'none';
+    // Assignments
+    const asgns = ML.getAssignmentsForClassroom(cls.id);
+    if (asgns.length) {
+      document.getElementById('asgn-strip').classList.remove('hidden');
+      document.getElementById('asgn-content').innerHTML = asgns.map(a => `<p>📝 <strong>${a.title}</strong> — due ${a.dueDate}</p>`).join('');
+    }
+  } else {
+    clsBanner.classList.add('hidden');
+    joinBanner.style.display = 'block';
+  }
+
+  // Units journey
+  const journey = document.getElementById('unit-journey');
+  journey.innerHTML = '';
+  ML.CURRICULUM.forEach((unit, idx) => {
+    const prog = ML.getProgress(state.user.id, unit.id);
+    const lessonsDone = prog.lessonsCompleted || [];
+    const totalSteps = unit.lessons.length;
+    const doneCt = lessonsDone.length;
+    const pctDone = Math.round((doneCt / totalSteps) * 100);
+    const hasTest = prog.testScores && prog.testScores.length > 0;
+    const isComplete = doneCt >= totalSteps && hasTest;
+    const isUnlocked = idx === 0 || (() => { const prev = ML.getProgress(state.user.id, ML.CURRICULUM[idx-1].id); return (prev.lessonsCompleted||[]).length >= ML.CURRICULUM[idx-1].lessons.length; })();
+
+    if (idx > 0) journey.insertAdjacentHTML('beforeend', `<div class="journey-connector"></div>`);
+
+    const dots = unit.lessons.map((l, li) => {
+      const done = lessonsDone.includes(l.id);
+      const isCur = !done && li === lessonsDone.length;
+      return `<div class="dot ${done?'done':isCur?'current':''}"></div>`;
+    }).join('');
+
+    const bestScore = hasTest ? Math.max(...(prog.testScores||[]).map(s=>s.score)) : null;
+
+    journey.insertAdjacentHTML('beforeend', `
+      <div class="unit-node">
+        <div class="unit-card ${!isUnlocked?'locked':''} ${isUnlocked&&!isComplete?'active-unit':''}"
+             onclick="${isUnlocked?`openUnit('${unit.id}')`:''}">
+          ${isComplete ? '<div class="unit-badge">✓ Complete</div>' : ''}
+          <span class="unit-emoji">${!isUnlocked ? '🔒' : unit.emoji}</span>
+          <div class="unit-title">${unit.title}</div>
+          <div class="unit-sub">${isUnlocked ? `${pctDone}% complete` : 'Finish the previous unit first'}</div>
+          <div class="unit-progress-dots">${dots}</div>
+          ${isUnlocked ? `<span class="btn btn-primary" style="width:100%;justify-content:center">${isComplete?'Review':'Continue'}</span>` : ''}
+        </div>
+      </div>`);
+  });
+}
+
+// ── Unit detail ───────────────────────────────────────
+function openUnit(unitId) {
+  const unit = ML.CURRICULUM.find(u => u.id === unitId);
+  state.activeUnit = unit;
+  const prog = ML.getProgress(state.user.id, unitId);
+  const done = prog.lessonsCompleted || [];
+
+  document.getElementById('unit-detail-header').innerHTML = `
+    <span class="unit-detail-emoji">${unit.emoji}</span>
+    <h2>${unit.title}</h2>
+    <p style="color:#64748b;font-size:.9rem">${done.length} of ${unit.lessons.length} lessons complete</p>`;
+
+  const list = document.getElementById('lesson-list');
+  list.innerHTML = '';
+
+  unit.lessons.forEach((lesson, idx) => {
+    const isDone = done.includes(lesson.id);
+    const isLocked = !isDone && idx > done.length;
+    const icons = { matchup: '🔗', pattern: '🧩', milestone: '📖' };
+    const labels = { matchup: 'Match-Up Exercise', pattern: 'Pattern Exercise', milestone: 'Grammar Milestone' };
+    list.insertAdjacentHTML('beforeend', `
+      <div class="lesson-row ${isDone?'completed':''} ${isLocked?'locked':''}"
+           onclick="${isLocked?'':`openLesson('${lesson.id}')`}">
+        <div class="lesson-icon type-${lesson.type}">${icons[lesson.type]}</div>
+        <div class="lesson-info">
+          <h4>${lesson.title}</h4>
+          <p>${labels[lesson.type]}</p>
+        </div>
+        <div class="lesson-check ${isDone?'done':''}">${isDone?'✓':isLocked?'🔒':''}</div>
+      </div>`);
+  });
+
+  // Test row
+  const best = prog.testScores && prog.testScores.length ? Math.max(...prog.testScores.map(s=>s.score)) : null;
+  list.insertAdjacentHTML('beforeend', `
+    <div class="unit-test-row" onclick="openUnitTest('${unitId}')">
+      <div style="font-size:1.8rem">📝</div>
+      <div>
+        <h4>Unit Test</h4>
+        <p>${best !== null ? `Best score: ${best}% — tap to retake!` : 'Test yourself on the whole unit'}</p>
+      </div>
+      ${best !== null ? `<span class="best-score">Best: ${best}%</span>` : ''}
+    </div>`);
+
+  showView('unit');
+}
+
+function openLesson(lessonId) {
+  const lesson = state.activeUnit.lessons.find(l => l.id === lessonId);
+  state.activeLesson = lesson;
+  if (lesson.type === 'milestone') { openMilestone(lesson); return; }
+  if (lesson.type === 'matchup') startMatchup(lesson);
+  else startPattern(lesson);
+  showView('exercise');
+}
+
+function exitLesson() { showView('unit'); if (state.activeUnit) openUnit(state.activeUnit.id); }
+
+// ── Matchup Exercise ──────────────────────────────────
+function startMatchup(lesson) {
+  document.getElementById('ex-prog').textContent = lesson.title;
+  document.getElementById('ex-title').textContent = 'Match the pairs!';
+  document.getElementById('ex-subtitle').textContent = 'Tap a Manx word, then its English meaning';
+  document.getElementById('btn-next-ex').classList.add('hidden');
+  hideFeedback();
+
+  state.matchPairs = [...lesson.pairs].sort(() => Math.random() - .5);
+  state.matchSel = { left: null, right: null };
+  state.matchDone = [];
+
+  const rightShuffled = [...lesson.pairs].sort(() => Math.random() - .5);
+  document.getElementById('ex-prog-bar').style.width = '0%';
+
+  document.getElementById('exercise-body').innerHTML = `
+    <div class="matchup-cols">
+      <div class="match-col">
+        <div class="match-col-label">Manx</div>
+        ${state.matchPairs.map((p,i) => `<div class="match-item" id="ml${i}" data-idx="${i}" data-side="left" onclick="selectMatch(this)">${p.manx}</div>`).join('')}
+      </div>
+      <div class="match-col">
+        <div class="match-col-label">English</div>
+        ${rightShuffled.map((p,i) => `<div class="match-item" id="mr${i}" data-val="${p.english}" data-side="right" onclick="selectMatch(this)">${p.english}</div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function selectMatch(el) {
+  if (el.classList.contains('matched-correct')) return;
+  const side = el.dataset.side;
+  // deselect same side
+  document.querySelectorAll(`.match-item.selected[data-side="${side}"]`).forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  if (side === 'left') state.matchSel.left = el;
+  else state.matchSel.right = el;
+
+  if (state.matchSel.left && state.matchSel.right) {
+    const leftIdx = parseInt(state.matchSel.left.dataset.idx);
+    const correctEng = state.matchPairs[leftIdx].english;
+    const chosen = state.matchSel.right.dataset.val;
+    if (correctEng === chosen) {
+      state.matchSel.left.classList.remove('selected'); state.matchSel.left.classList.add('matched-correct');
+      state.matchSel.right.classList.remove('selected'); state.matchSel.right.classList.add('matched-correct');
+      state.matchDone.push(leftIdx);
+      const pct = (state.matchDone.length / state.matchPairs.length) * 100;
+      document.getElementById('ex-prog-bar').style.width = pct + '%';
+      if (state.matchDone.length === state.matchPairs.length) {
+        showFeedback(true, 'Perfect!', 'You matched all pairs correctly!');
+        ML.markLessonComplete(state.user.id, state.activeUnit.id, state.activeLesson.id);
+        document.getElementById('btn-next-ex').classList.remove('hidden');
+        document.getElementById('btn-next-ex').textContent = 'Continue →';
+        document.getElementById('btn-next-ex').onclick = finishLesson;
+      }
+    } else {
+      state.matchSel.left.classList.add('matched-wrong'); state.matchSel.right.classList.add('matched-wrong');
+      setTimeout(() => {
+        state.matchSel.left.classList.remove('selected','matched-wrong');
+        state.matchSel.right.classList.remove('selected','matched-wrong');
+      }, 600);
+    }
+    state.matchSel = { left: null, right: null };
+  }
+}
+
+// ── Pattern Exercise ──────────────────────────────────
+function startPattern(lesson) {
+  document.getElementById('ex-title').textContent = 'Fill the gap!';
+  document.getElementById('ex-subtitle').textContent = 'Choose the missing Manx word';
+  state.patternIdx = 0; state.patternAnswered = false;
+  renderPatternQ(lesson);
+}
+
+function renderPatternQ(lesson) {
+  const q = lesson.sentences[state.patternIdx];
+  const total = lesson.sentences.length;
+  document.getElementById('ex-prog').textContent = `${state.activeLesson.title} — ${state.patternIdx+1} of ${total}`;
+  document.getElementById('ex-prog-bar').style.width = ((state.patternIdx/total)*100) + '%';
+  hideFeedback();
+  document.getElementById('btn-next-ex').classList.add('hidden');
+  state.patternAnswered = false;
+
+  const shuffled = [...q.options].sort(() => Math.random() - .5);
+  document.getElementById('exercise-body').innerHTML = `
+    <div class="pattern-card">
+      <div class="pattern-sentence">${q.template.replace(q.answer,'<span style="border-bottom:3px solid var(--primary);padding:0 8px">___</span>')}</div>
+      <div class="pattern-translation">${q.translation}</div>
+      <div class="pattern-options">
+        ${shuffled.map(o => `<button class="opt-btn" onclick="checkPattern('${o}','${q.answer}',this)">${o}</button>`).join('')}
+      </div>
+    </div>`;
+}
+
+function checkPattern(chosen, answer, btn) {
+  if (state.patternAnswered) return;
+  state.patternAnswered = true;
+  document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+  if (chosen === answer) {
+    btn.classList.add('correct');
+    showFeedback(true, 'Correct! 🎉', `"${answer}" is right!`);
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.opt-btn').forEach(b => { if (b.textContent.trim() === answer) b.classList.add('correct'); });
+    showFeedback(false, 'Not quite', `The answer was "${answer}"`);
+  }
+  document.getElementById('btn-next-ex').classList.remove('hidden');
+  const isLast = state.patternIdx >= state.activeLesson.sentences.length - 1;
+  document.getElementById('btn-next-ex').textContent = isLast ? 'Finish ✓' : 'Next →';
+  document.getElementById('btn-next-ex').onclick = nextExerciseStep;
+}
+
+function nextExerciseStep() {
+  state.patternIdx++;
+  if (state.patternIdx < state.activeLesson.sentences.length) {
+    renderPatternQ(state.activeLesson);
+  } else {
+    ML.markLessonComplete(state.user.id, state.activeUnit.id, state.activeLesson.id);
+    finishLesson();
+  }
+}
+
+function finishLesson() {
+  renderHome();
+  exitLesson();
+  showToast('🌟 Lesson complete! +20 XP');
+  updateXPDisplay();
+}
+
+function updateXPDisplay() {
+  let totalXP = 0;
+  ML.CURRICULUM.forEach(u => { totalXP += (ML.getProgress(state.user.id, u.id).xp||0); });
+  document.getElementById('xp-display').textContent = `⭐ ${totalXP} XP`;
+}
+
+// ── Milestone ─────────────────────────────────────────
+function openMilestone(lesson) {
+  document.getElementById('ms-title').textContent = lesson.title;
+  document.getElementById('ms-concept').textContent = lesson.concept;
+  document.getElementById('ms-explanation').innerHTML = lesson.explanation.trim().split('\n').map(l => `<p>${l.trim()}</p>`).join('');
+  showView('milestone');
+}
+
+function completeMilestone() {
+  ML.markLessonComplete(state.user.id, state.activeUnit.id, state.activeLesson.id);
+  renderHome();
+  exitLesson();
+  showToast('📖 Grammar milestone complete! +20 XP');
+  updateXPDisplay();
+}
+
+// ── Unit Test ─────────────────────────────────────────
+function openUnitTest(unitId) {
+  const unit = ML.CURRICULUM.find(u => u.id === unitId);
+  state.activeUnit = unit;
+  state.currentTestUnitId = unitId;
+  state.testQuestions = [...unit.test.questions].sort(() => Math.random() - .5);
+  state.testIdx = 0;
+  state.testAnswers = [];
+  renderTestQuestion();
+  showView('test');
+}
+
+function renderTestQuestion() {
+  const q = state.testQuestions[state.testIdx];
+  const total = state.testQuestions.length;
+  document.getElementById('test-q-count').textContent = `Question ${state.testIdx+1} of ${total}`;
+  document.getElementById('test-prog-bar').style.width = ((state.testIdx/total)*100) + '%';
+  document.getElementById('test-q-text').textContent = q.q;
+  document.getElementById('btn-next-test').classList.add('hidden');
+  document.getElementById('feedback-bar-test').classList.remove('show','correct','wrong');
+
+  const letters = ['A','B','C','D'];
+  document.getElementById('test-options').innerHTML = q.options.map((o,i) => `
+    <button class="test-opt" onclick="answerTest(${i},${q.answer},this)">
+      <span class="test-opt-letter">${letters[i]}</span> ${o}
+    </button>`).join('');
+}
+
+function answerTest(chosen, correct, btn) {
+  document.querySelectorAll('.test-opt').forEach(b => b.disabled = true);
+  const isRight = chosen === correct;
+  state.testAnswers.push(isRight);
+  btn.classList.add(isRight ? 'correct' : 'wrong');
+  if (!isRight) document.querySelectorAll('.test-opt')[correct].classList.add('correct');
+
+  const fb = document.getElementById('feedback-bar-test');
+  fb.className = `feedback-bar show ${isRight?'correct':'wrong'}`;
+  fb.innerHTML = `<div class="fb-icon">${isRight?'✅':'❌'}</div><div class="fb-text"><h4>${isRight?'Correct!':'Not quite'}</h4></div>`;
+
+  document.getElementById('btn-next-test').classList.remove('hidden');
+  const isLast = state.testIdx >= state.testQuestions.length - 1;
+  document.getElementById('btn-next-test').textContent = isLast ? 'See Results →' : 'Next →';
+}
+
+function nextTestQuestion() {
+  state.testIdx++;
+  if (state.testIdx < state.testQuestions.length) renderTestQuestion();
+  else showResults();
+}
+
+function showResults() {
+  const correct = state.testAnswers.filter(Boolean).length;
+  const total = state.testAnswers.length;
+  const pct = Math.round((correct/total)*100);
+  ML.addTestScore(state.user.id, state.currentTestUnitId, pct);
+  updateXPDisplay();
+
+  const msgs = pct===100 ? ['🏆','Perfect score!','You got every single one right. Incredible!']
+    : pct>=80 ? ['🎉','Brilliant!',`You got ${correct} out of ${total} — that's amazing!`]
+    : pct>=60 ? ['😊','Good effort!',`You got ${correct} out of ${total}. Keep practising!`]
+    : ['💪','Keep going!',`You got ${correct} out of ${total}. Review the lessons and try again.`];
+
+  document.getElementById('results-emoji').textContent = msgs[0];
+  document.getElementById('results-msg').textContent = msgs[1];
+  document.getElementById('results-sub').textContent = msgs[2];
+  document.getElementById('score-pct').textContent = pct + '%';
+
+  const circ = Math.PI * 2 * 64;
+  document.getElementById('score-ring').style.strokeDashoffset = circ - (circ * pct/100);
+  document.getElementById('score-ring').style.stroke = pct>=80?'#10B981':pct>=60?'#F59E0B':'#EC4899';
+
+  const prog = ML.getProgress(state.user.id, state.currentTestUnitId);
+  const hist = (prog.testScores||[]).slice().reverse().slice(0,5);
+  document.getElementById('results-history').innerHTML = `
+    <h4>📊 Your attempts</h4>
+    ${hist.map((s,i) => `<div class="history-item"><span>Attempt ${hist.length-i}</span><span>${s.date}</span><span class="h-score" style="color:${s.score>=80?'var(--success)':s.score>=60?'var(--secondary-dark)':'var(--danger)'}">${s.score}%</span></div>`).join('')}`;
+
+  if (pct >= 80) launchConfetti();
+  showView('results');
+}
+
+function retakeTest() { openUnitTest(state.currentTestUnitId); }
+
+// ── Classroom join ────────────────────────────────────
+function doJoinClass() {
+  if (!state.user) return;
+  const raw = document.getElementById('invite-code-input').value;
+  const code = raw.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const err = document.getElementById('join-error');
+  if (!code) { err.textContent = 'Please enter an invite code'; err.classList.add('show'); return; }
+  const btn = document.getElementById('btn-join');
+  btn.disabled = true; btn.textContent = 'Joining…';
+  const res = ML.joinClassroom({ inviteCode: code, studentId: state.user.id });
+  btn.disabled = false; btn.textContent = 'Join';
+  if (res.error) { err.textContent = res.error; err.classList.add('show'); return; }
+  err.classList.remove('show');
+  document.getElementById('invite-code-input').value = '';
+  renderHome();
+  showToast('🏫 Joined ' + res.classroom.name + '!');
+}
+
+// ── Helpers ───────────────────────────────────────────
+function showError(id, msg) { const el=document.getElementById(id); el.textContent=msg; el.classList.add('show'); }
+function showFeedback(ok, heading, body) {
+  const fb = document.getElementById('feedback-bar');
+  fb.className = `feedback-bar show ${ok?'correct':'wrong'}`;
+  fb.innerHTML = `<div class="fb-icon">${ok?'✅':'❌'}</div><div class="fb-text"><h4>${heading}</h4><p>${body}</p></div>`;
+}
+function hideFeedback() { document.getElementById('feedback-bar').classList.remove('show','correct','wrong'); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function launchConfetti() {
+  const colors = ['#2563EB','#F59E0B','#EC4899','#10B981','#a855f7'];
+  for (let i = 0; i < 60; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.cssText = `left:${Math.random()*100}vw;top:0;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>0.5?'50%':'2px'};animation-delay:${Math.random()*1}s;animation-duration:${1.5+Math.random()*1.5}s`;
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
+}
+</script>
+</body>
+</html>

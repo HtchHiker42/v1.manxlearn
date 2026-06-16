@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ManxLearn — Teacher Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#2563EB;--primary-dark:#1d4ed8;--primary-light:#dbeafe;
+  --secondary:#F59E0B;--secondary-dark:#d97706;--secondary-light:#fef3c7;
+  --accent:#EC4899;--accent-dark:#db2777;--accent-light:#fce7f3;
+  --success:#10B981;--success-dark:#059669;--success-light:#d1fae5;
+  --danger:#DC2626;--danger-dark:#b91c1c;
+  --bg:#EFF6FF;--fg:#0F172A;--muted:#F1F5FD;--border:#C7D9FA;
+  --font-h:'Baloo 2',cursive;--font-b:'Comic Neue',cursive;
+  --r:20px;--r-sm:12px;--r-lg:28px;
+  --shadow-clay:0 4px 0 var(--border),0 8px 24px rgba(37,99,235,.1);
+}
+body{font-family:var(--font-b);background:var(--bg);color:var(--fg);min-height:100vh;overflow-x:hidden;display:flex;flex-direction:column}
+.hidden{display:none!important}
+
+/* ── Layout ── */
+#app-shell{display:flex;flex:1;min-height:100vh}
+#sidebar{width:240px;background:#fff;border-right:3px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:50;transform:translateX(0);transition:transform 250ms}
+#main-content{margin-left:240px;flex:1;padding:32px 32px;max-width:1100px}
+@media(max-width:768px){#sidebar{transform:translateX(-100%)}#main-content{margin-left:0;padding:20px 16px}}
+
+/* ── Sidebar ── */
+.sidebar-logo{padding:20px 20px 16px;border-bottom:2px solid var(--border)}
+.sidebar-logo a{font-family:var(--font-h);font-weight:800;font-size:1.3rem;color:var(--primary);text-decoration:none;display:flex;align-items:center;gap:8px}
+.sidebar-logo span{background:var(--primary);color:#fff;border-radius:8px;padding:1px 8px;font-size:.9rem}
+.sidebar-user{padding:14px 20px;border-bottom:2px solid var(--border);display:flex;align-items:center;gap:10px}
+.user-avatar{width:38px;height:38px;border-radius:50%;background:var(--secondary-light);border:3px solid var(--secondary);display:flex;align-items:center;justify-content:center;font-family:var(--font-h);font-weight:800;font-size:1rem;color:var(--secondary-dark);flex-shrink:0}
+.user-info{flex:1;min-width:0}
+.user-info .name{font-family:var(--font-h);font-weight:700;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-info .role{font-size:.75rem;color:#94a3b8}
+.sidebar-nav{flex:1;padding:12px 12px;display:flex;flex-direction:column;gap:4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--r-sm);font-family:var(--font-h);font-weight:700;font-size:.92rem;cursor:pointer;color:#475569;transition:all 150ms;border:none;background:transparent;width:100%;text-align:left}
+.nav-item:hover{background:var(--muted);color:var(--fg)}
+.nav-item.active{background:var(--primary-light);color:var(--primary)}
+.nav-item .ni{width:22px;text-align:center;font-size:1.1rem;flex-shrink:0}
+.sidebar-footer{padding:12px;border-top:2px solid var(--border)}
+.btn-logout{width:100%;background:transparent;border:2px solid var(--border);border-radius:var(--r-sm);padding:10px;font-family:var(--font-h);font-weight:700;font-size:.88rem;color:#94a3b8;cursor:pointer;transition:all 150ms}
+.btn-logout:hover{border-color:var(--danger);color:var(--danger);background:#fef2f2}
+
+/* ── Buttons ── */
+.btn{font-family:var(--font-h);font-weight:700;border:none;cursor:pointer;border-radius:var(--r-sm);padding:11px 22px;font-size:.95rem;transition:transform 150ms ease-out,box-shadow 150ms ease-out;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+.btn:active{transform:translateY(2px)!important}
+.btn-primary{background:var(--primary);color:#fff;border:3px solid var(--primary-dark);box-shadow:0 4px 0 var(--primary-dark)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 5px 0 var(--primary-dark)}
+.btn-secondary{background:var(--secondary);color:#fff;border:3px solid var(--secondary-dark);box-shadow:0 4px 0 var(--secondary-dark)}
+.btn-secondary:hover{transform:translateY(-1px);box-shadow:0 5px 0 var(--secondary-dark)}
+.btn-accent{background:var(--accent);color:#fff;border:3px solid var(--accent-dark);box-shadow:0 4px 0 var(--accent-dark)}
+.btn-accent:hover{transform:translateY(-1px);box-shadow:0 5px 0 var(--accent-dark)}
+.btn-outline{background:#fff;color:var(--primary);border:3px solid var(--border);box-shadow:0 4px 0 var(--border)}
+.btn-outline:hover{transform:translateY(-1px);box-shadow:0 5px 0 var(--border)}
+.btn-sm{padding:7px 16px;font-size:.82rem}
+.btn-danger{background:var(--danger);color:#fff;border:3px solid var(--danger-dark);box-shadow:0 4px 0 var(--danger-dark)}
+.btn:disabled{opacity:.5;pointer-events:none}
+
+/* ── Cards & Layout ── */
+.card{background:#fff;border:3px solid var(--border);border-radius:var(--r);padding:24px;box-shadow:var(--shadow-clay)}
+.page-header{margin-bottom:28px}
+.page-header h1{font-family:var(--font-h);font-size:1.8rem;font-weight:800;margin-bottom:4px}
+.page-header p{color:#64748b;font-size:.95rem}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+/* ── Stat cards ── */
+.stat-card{background:#fff;border:3px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--shadow-clay);display:flex;align-items:center;gap:16px}
+.stat-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;border:2px solid transparent;flex-shrink:0}
+.stat-icon.blue{background:var(--primary-light);border-color:var(--primary)}
+.stat-icon.yellow{background:var(--secondary-light);border-color:var(--secondary)}
+.stat-icon.green{background:var(--success-light);border-color:var(--success)}
+.stat-icon.pink{background:var(--accent-light);border-color:var(--accent)}
+.stat-body .num{font-family:var(--font-h);font-size:1.8rem;font-weight:800;line-height:1}
+.stat-body .lbl{font-size:.82rem;color:#64748b;margin-top:2px}
+
+/* ── Table ── */
+.data-table{width:100%;border-collapse:collapse;font-size:.9rem}
+.data-table th{font-family:var(--font-h);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border)}
+.data-table td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:var(--muted)}
+.score-pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-family:var(--font-h);font-weight:700;font-size:.8rem;border:2px solid transparent}
+.score-pill.high{background:var(--success-light);border-color:var(--success);color:var(--success-dark)}
+.score-pill.mid{background:var(--secondary-light);border-color:var(--secondary);color:var(--secondary-dark)}
+.score-pill.low{background:#fef2f2;border-color:#fecaca;color:var(--danger)}
+.score-pill.none{background:var(--muted);border-color:var(--border);color:#94a3b8}
+.progress-mini{height:8px;background:var(--muted);border-radius:999px;overflow:hidden;width:80px;display:inline-block;vertical-align:middle;border:1px solid var(--border)}
+.progress-mini-fill{height:100%;background:var(--primary);border-radius:999px}
+
+/* ── Classroom cards ── */
+.classroom-card{background:#fff;border:3px solid var(--border);border-radius:var(--r-lg);padding:24px;box-shadow:var(--shadow-clay);cursor:pointer;transition:transform 200ms,box-shadow 200ms}
+.classroom-card:hover{transform:translateY(-3px);box-shadow:0 7px 0 var(--border),0 14px 30px rgba(37,99,235,.12)}
+.cls-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
+.cls-card-icon{width:56px;height:56px;border-radius:16px;background:var(--primary-light);border:3px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:1.8rem}
+.cls-card-info h3{font-family:var(--font-h);font-size:1.1rem;font-weight:800;margin-bottom:3px}
+.invite-code{background:var(--secondary-light);border:2px solid var(--secondary);border-radius:8px;padding:2px 10px;font-family:var(--font-h);font-weight:800;font-size:.85rem;color:var(--secondary-dark);letter-spacing:.05em}
+.cls-meta{display:flex;gap:12px;font-size:.82rem;color:#64748b}
+.cls-meta span{display:flex;align-items:center;gap:4px}
+.cls-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+
+/* ── Student detail ── */
+.student-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background 150ms;border-radius:var(--r-sm);padding-left:8px;padding-right:8px}
+.student-row:last-child{border-bottom:none}
+.student-row:hover{background:var(--muted)}
+.stu-avatar{width:38px;height:38px;border-radius:50%;background:var(--accent-light);border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--font-h);font-weight:800;font-size:.95rem;color:var(--accent-dark);flex-shrink:0}
+.stu-info{flex:1}
+.stu-info .sname{font-family:var(--font-h);font-weight:700;font-size:.95rem}
+.stu-info .suname{font-size:.8rem;color:#94a3b8}
+.stu-xp{font-family:var(--font-h);font-weight:700;font-size:.85rem;color:var(--secondary-dark);background:var(--secondary-light);border:2px solid var(--secondary);border-radius:999px;padding:2px 10px}
+
+/* ── Assignment form ── */
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-family:var(--font-h);font-weight:700;font-size:.88rem;margin-bottom:6px;color:var(--fg)}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:11px 14px;border:3px solid var(--border);border-radius:var(--r-sm);font-family:var(--font-b);font-size:.95rem;background:#fff;color:var(--fg);outline:none;transition:border-color 150ms}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--primary)}
+.form-group .hint{font-size:.78rem;color:#94a3b8;margin-top:4px}
+
+/* ── Modal ── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity 200ms}
+.modal-backdrop.open{opacity:1;pointer-events:all}
+.modal{background:#fff;border:3px solid var(--border);border-radius:var(--r-lg);padding:28px;width:100%;max-width:460px;box-shadow:0 16px 48px rgba(37,99,235,.18);transform:scale(.95) translateY(10px);transition:transform 200ms;max-height:90vh;overflow-y:auto}
+.modal-backdrop.open .modal{transform:scale(1) translateY(0)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.modal-header h2{font-family:var(--font-h);font-size:1.25rem;font-weight:800}
+.modal-close{background:var(--muted);border:2px solid var(--border);border-radius:8px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;color:#64748b}
+.modal-close:hover{background:#fef2f2;border-color:#fecaca;color:var(--danger)}
+
+/* ── Progress bars (unit overview) ── */
+.unit-progress-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.unit-progress-row:last-child{border-bottom:none}
+.unit-emoji-sm{font-size:1.2rem;width:28px;text-align:center;flex-shrink:0}
+.unit-name{font-family:var(--font-h);font-weight:700;font-size:.88rem;flex:1;min-width:0}
+.bar-wrap{width:100px;height:8px;background:var(--muted);border-radius:999px;border:1px solid var(--border);overflow:hidden}
+.bar-fill{height:100%;border-radius:999px;background:var(--primary)}
+.unit-pct{font-family:var(--font-h);font-size:.8rem;color:#64748b;width:32px;text-align:right}
+
+/* ── Login ── */
+#view-login-t{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:var(--bg)}
+.login-wrap{width:100%;max-width:420px}
+.login-hero{text-align:center;margin-bottom:24px}
+.login-mascot{font-size:3.5rem;display:block;margin-bottom:10px}
+.login-hero h1{font-family:var(--font-h);font-size:1.8rem;font-weight:800;margin-bottom:4px}
+.login-hero p{color:#64748b;font-size:.9rem}
+.tabs{display:flex;background:var(--muted);border-radius:var(--r-sm);padding:4px;margin-bottom:20px;border:2px solid var(--border)}
+.tab-btn{flex:1;padding:9px;font-family:var(--font-h);font-weight:700;font-size:.9rem;border:none;background:transparent;border-radius:10px;cursor:pointer;color:#64748b;transition:all 200ms}
+.tab-btn.active{background:#fff;color:var(--primary);box-shadow:0 2px 8px rgba(37,99,235,.12)}
+.error-msg{background:#fef2f2;border:2px solid #fecaca;border-radius:10px;padding:9px 13px;font-size:.85rem;color:var(--danger);margin-bottom:12px;display:none}
+.error-msg.show{display:block}
+.success-msg{background:var(--success-light);border:2px solid var(--success);border-radius:10px;padding:9px 13px;font-size:.85rem;color:var(--success-dark);margin-bottom:12px;display:none}
+.success-msg.show{display:block}
+
+/* ── Section dividers ── */
+.section-label{font-family:var(--font-h);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:10px;margin-top:24px}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e293b;color:#fff;font-family:var(--font-h);font-weight:700;padding:12px 24px;border-radius:999px;font-size:.9rem;transition:transform 300ms ease-out;z-index:999;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── Back button ── */
+.back-row{display:flex;align-items:center;gap:10px;margin-bottom:20px;cursor:pointer;font-family:var(--font-h);font-weight:700;color:var(--primary);font-size:.95rem;border:none;background:transparent;padding:0}
+.back-row:hover{opacity:.8}
+
+/* ── Empty state ── */
+.empty-state{text-align:center;padding:48px 20px;color:#94a3b8}
+.empty-state .ei{font-size:3rem;display:block;margin-bottom:12px}
+.empty-state h3{font-family:var(--font-h);font-weight:700;color:#64748b;margin-bottom:8px}
+.empty-state p{font-size:.88rem;line-height:1.6}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════
+     LOGIN VIEW
+══════════════════════════════ -->
+<div id="view-login-t">
+  <div class="login-wrap">
+    <div class="login-hero">
+      <span class="login-mascot">📋</span>
+      <h1>Teacher Portal</h1>
+      <p>ManxLearn — manage your classrooms and track student progress</p>
+    </div>
+    <div class="card">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('login')">Log In</button>
+        <button class="tab-btn" onclick="switchTab('register')">Register</button>
+      </div>
+      <div id="t-err" class="error-msg"></div>
+
+      <form id="form-login-t" onsubmit="doLogin(event)">
+        <div class="form-group">
+          <label>Username</label>
+          <input id="tl-user" type="text" placeholder="e.g. ms_kermode" autocomplete="username" required>
+          <div class="hint">Demo: ms_kermode / demo123</div>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input id="tl-pass" type="password" autocomplete="current-password" placeholder="Your password" required>
+        </div>
+        <button class="btn btn-secondary" style="width:100%;font-size:1rem;padding:14px" type="submit" id="btn-tlogin">Log In as Teacher</button>
+      </form>
+
+      <form id="form-reg-t" class="hidden" onsubmit="doRegister(event)">
+        <div class="form-group">
+          <label>Username</label>
+          <input id="tr-user" type="text" placeholder="e.g. ms_kermode" autocomplete="username" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input id="tr-pass" type="password" autocomplete="new-password" placeholder="Choose a secure password" required minlength="6">
+        </div>
+        <button class="btn btn-secondary" style="width:100%;font-size:1rem;padding:14px" type="submit" id="btn-treg">Create Teacher Account</button>
+      </form>
+    </div>
+    <p style="text-align:center;margin-top:16px;font-size:.85rem;color:#94a3b8">
+      Are you a student? <a href="student.html" style="color:var(--primary);font-weight:700">Student portal →</a>
+    </p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     APP SHELL (post-login)
+══════════════════════════════ -->
+<div id="app-shell" class="hidden">
+  <!-- Sidebar -->
+  <nav id="sidebar">
+    <div class="sidebar-logo">
+      <a href="index.html"><span>ML</span> ManxLearn</a>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="t-avatar">T</div>
+      <div class="user-info">
+        <div class="name" id="t-name">Teacher</div>
+        <div class="role">Teacher account</div>
+      </div>
+    </div>
+    <div class="sidebar-nav">
+      <button class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+        <span class="ni">🏠</span> Dashboard
+      </button>
+      <button class="nav-item" onclick="showPage('classrooms')" id="nav-classrooms">
+        <span class="ni">🏫</span> Classrooms
+      </button>
+      <button class="nav-item" onclick="showPage('assignments')" id="nav-assignments">
+        <span class="ni">📋</span> Assignments
+      </button>
+      <button class="nav-item" onclick="showPage('progress')" id="nav-progress">
+        <span class="ni">📊</span> Progress
+      </button>
+    </div>
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="doLogout()">← Log out</button>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main id="main-content">
+
+    <!-- ── PAGE: DASHBOARD ── -->
+    <div id="page-dashboard" class="page">
+      <div class="page-header">
+        <h1 id="dash-greeting">Good morning!</h1>
+        <p>Here's an overview of your classes today.</p>
+      </div>
+      <div class="grid-3" id="stat-row" style="margin-bottom:24px"></div>
+      <div class="grid-2">
+        <div>
+          <div class="section-label">Your Classrooms</div>
+          <div id="dash-classrooms"></div>
+        </div>
+        <div>
+          <div class="section-label">Recent Test Activity</div>
+          <div class="card" id="dash-activity"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAGE: CLASSROOMS ── -->
+    <div id="page-classrooms" class="page hidden">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1>Classrooms</h1>
+          <p>Create and manage your classes. Share the invite code with students.</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modal-new-class')">+ New Classroom</button>
+      </div>
+      <div id="classrooms-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px"></div>
+    </div>
+
+    <!-- ── PAGE: CLASSROOM DETAIL ── -->
+    <div id="page-cls-detail" class="page hidden">
+      <button class="back-row" onclick="showPage('classrooms')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        All Classrooms
+      </button>
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div><h1 id="cls-detail-name">Class</h1></div>
+        <button class="btn btn-accent btn-sm" onclick="openModal('modal-new-asgn')">+ New Assignment</button>
+      </div>
+      <!-- Invite code banner — always visible -->
+      <div style="background:var(--secondary-light);border:3px solid var(--secondary);border-radius:var(--r);padding:18px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div>
+          <div style="font-family:var(--font-h);font-size:.78rem;font-weight:700;color:var(--secondary-dark);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Student Invite Code</div>
+          <div id="cls-detail-code" style="font-family:var(--font-h);font-size:2rem;font-weight:800;letter-spacing:.15em;color:var(--fg)"></div>
+        </div>
+        <div style="margin-left:auto;display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <button class="btn btn-secondary btn-sm" onclick="copyDetailCode()">Copy Code</button>
+          <span style="font-size:.78rem;color:#94a3b8">Students enter this in the Student Portal</span>
+        </div>
+      </div>
+      <div class="section-label">Students</div>
+      <div class="card" style="margin-bottom:20px;padding:8px 16px" id="cls-students-list"></div>
+      <div class="section-label">Assignments</div>
+      <div class="card" id="cls-assignments-list"></div>
+    </div>
+
+    <!-- ── PAGE: STUDENT DETAIL ── -->
+    <div id="page-stu-detail" class="page hidden">
+      <button class="back-row" id="stu-back-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to Classroom
+      </button>
+      <div class="page-header">
+        <h1 id="stu-detail-name">Student</h1>
+        <p id="stu-detail-meta">Username · joined</p>
+      </div>
+      <div class="grid-2" style="margin-bottom:20px" id="stu-stats-row"></div>
+      <div class="section-label">Unit Progress</div>
+      <div class="card" id="stu-unit-progress"></div>
+      <div class="section-label" style="margin-top:20px">Test Score History</div>
+      <div class="card" id="stu-test-history">
+        <table class="data-table" style="width:100%">
+          <thead><tr><th>Unit</th><th>Attempts</th><th>Best Score</th><th>Last Score</th></tr></thead>
+          <tbody id="stu-test-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PAGE: ASSIGNMENTS ── -->
+    <div id="page-assignments" class="page hidden">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1>Assignments</h1>
+          <p>Assignments you've set across all classrooms.</p>
+        </div>
+        <button class="btn btn-accent" onclick="openModal('modal-new-asgn')">+ New Assignment</button>
+      </div>
+      <div class="card" id="assignments-table-wrap">
+        <table class="data-table" style="width:100%">
+          <thead><tr><th>Title</th><th>Classroom</th><th>Unit</th><th>Due Date</th></tr></thead>
+          <tbody id="assignments-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PAGE: PROGRESS ── -->
+    <div id="page-progress" class="page hidden">
+      <div class="page-header">
+        <h1>Class Progress</h1>
+        <p>See how all students across your classrooms are doing.</p>
+      </div>
+      <div id="progress-classroom-select" style="margin-bottom:20px">
+        <div class="form-group" style="max-width:320px">
+          <label>Select Classroom</label>
+          <select id="prog-cls-select" onchange="renderProgressTable()">
+            <option value="">— Choose a classroom —</option>
+          </select>
+        </div>
+      </div>
+      <div class="card" id="progress-table-wrap">
+        <div class="empty-state"><span class="ei">📊</span><h3>Select a classroom</h3><p>Choose a classroom above to see student progress.</p></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══════════════════════════════
+     MODALS
+══════════════════════════════ -->
+<!-- New Classroom -->
+<div class="modal-backdrop" id="modal-new-class" onclick="closeBdModal(event,'modal-new-class')">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>🏫 New Classroom</h2>
+      <button class="modal-close" onclick="closeModal('modal-new-class')">✕</button>
+    </div>
+    <form onsubmit="submitNewClass(event)">
+      <div class="form-group">
+        <label>Classroom Name</label>
+        <input id="ncls-name" type="text" placeholder="e.g. Manx Class 4B" required>
+      </div>
+      <div id="ncls-err" class="error-msg"></div>
+      <button class="btn btn-primary" style="width:100%" type="submit">Create Classroom</button>
+    </form>
+  </div>
+</div>
+
+<!-- New Assignment -->
+<div class="modal-backdrop" id="modal-new-asgn" onclick="closeBdModal(event,'modal-new-asgn')">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>📋 New Assignment</h2>
+      <button class="modal-close" onclick="closeModal('modal-new-asgn')">✕</button>
+    </div>
+    <form onsubmit="submitNewAsgn(event)">
+      <div class="form-group">
+        <label>Title</label>
+        <input id="nasgn-title" type="text" placeholder="e.g. Complete Unit 1 Test" required>
+      </div>
+      <div class="form-group">
+        <label>Classroom</label>
+        <select id="nasgn-cls" required></select>
+      </div>
+      <div class="form-group">
+        <label>Unit</label>
+        <select id="nasgn-unit" required>
+          <option value="">— Choose a unit —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Due Date</label>
+        <input id="nasgn-due" type="date" required>
+      </div>
+      <div id="nasgn-err" class="error-msg"></div>
+      <button class="btn btn-accent" style="width:100%" type="submit">Set Assignment</button>
+    </form>
+  </div>
+</div>
+
+<!-- Invite code display -->
+<div class="modal-backdrop" id="modal-invite" onclick="closeBdModal(event,'modal-invite')">
+  <div class="modal" style="text-align:center">
+    <div class="modal-header">
+      <h2>🔑 Invite Code</h2>
+      <button class="modal-close" onclick="closeModal('modal-invite')">✕</button>
+    </div>
+    <p style="color:#64748b;margin-bottom:20px;font-size:.9rem">Share this code with your students. They enter it in the Student Portal to join.</p>
+    <div style="background:var(--secondary-light);border:3px solid var(--secondary);border-radius:var(--r);padding:24px;margin-bottom:20px">
+      <div id="invite-code-display" style="font-family:var(--font-h);font-size:2.5rem;font-weight:800;letter-spacing:.12em;color:var(--secondary-dark)"></div>
+    </div>
+    <button class="btn btn-outline" style="width:100%" onclick="copyInviteCode()">Copy Code</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="shared.js"></script>
+<script>
+// ── State ─────────────────────────────────────────────
+let tState = { user: null, classrooms: [], activeClsId: null, activeStuId: null };
+
+// ── Init ──────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  await ML.ensureReady();
+  const sess = ML.currentSession();
+  if (sess && sess.role === 'teacher') {
+    const user = ML.getUser(sess.userId);
+    if (user) { tState.user = user; enterTeacherApp(); return; }
+  }
+});
+
+function enterTeacherApp() {
+  document.getElementById('view-login-t').classList.add('hidden');
+  document.getElementById('app-shell').classList.remove('hidden');
+  document.getElementById('t-avatar').textContent = tState.user.displayName.charAt(0).toUpperCase();
+  document.getElementById('t-name').textContent = tState.user.displayName;
+  loadTeacherData();
+  populateAssignmentSelects();
+  renderDashboard();
+  showPage('dashboard');
+}
+
+function loadTeacherData() {
+  tState.classrooms = ML.getClassroomsForTeacher(tState.user.id);
+}
+
+// ── Auth ──────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.getElementById('form-login-t').classList.toggle('hidden', tab!=='login');
+  document.getElementById('form-reg-t').classList.toggle('hidden', tab!=='register');
+}
+
+async function doLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-tlogin');
+  btn.disabled = true; btn.textContent = 'Logging in…';
+  const res = await ML.loginUser({ username: document.getElementById('tl-user').value.trim(), password: document.getElementById('tl-pass').value });
+  if (res.error) { showErr('t-err', res.error); btn.disabled=false; btn.textContent='Log In as Teacher'; return; }
+  if (res.user.role !== 'teacher') { showErr('t-err', 'This account is not a teacher account.'); btn.disabled=false; btn.textContent='Log In as Teacher'; return; }
+  tState.user = res.user; enterTeacherApp();
+}
+
+async function doRegister(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-treg');
+  btn.disabled = true; btn.textContent = 'Creating…';
+  const username = document.getElementById('tr-user').value.trim();
+  const password = document.getElementById('tr-pass').value;
+  const res = await ML.registerUser({ username, password, role: 'teacher', displayName: username });
+  if (res.error) { showErr('t-err', res.error); btn.disabled=false; btn.textContent='Create Teacher Account'; return; }
+  const loginRes = await ML.loginUser({ username, password });
+  if (loginRes.error) { showErr('t-err', loginRes.error); btn.disabled=false; btn.textContent='Create Teacher Account'; return; }
+  tState.user = loginRes.user;
+  enterTeacherApp();
+}
+
+function doLogout() { ML.logoutUser(); location.reload(); }
+
+// ── Page router ───────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+  document.getElementById('page-' + name).classList.remove('hidden');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + name);
+  if (navEl) navEl.classList.add('active');
+  window.scrollTo(0,0);
+
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'classrooms') renderClassrooms();
+  if (name === 'assignments') renderAssignments();
+  if (name === 'progress') renderProgressSetup();
+}
+
+// ── Dashboard ─────────────────────────────────────────
+function renderDashboard() {
+  const h = new Date().getHours();
+  const greet = h<12?'Good morning':h<18?'Good afternoon':'Good evening';
+  document.getElementById('dash-greeting').textContent =
+    (h<12?'Good morning':h<18?'Good afternoon':'Good evening') + ', ' + (tState.user?.displayName||'Teacher') + '!';
+
+  loadTeacherData();
+  const db = ML.loadDB();
+  const allStudentIds = tState.classrooms.flatMap(c => c.studentIds);
+  const uniqueIds = [...new Set(allStudentIds)];
+  const allProgress = ML.getUsersProgress(uniqueIds);
+  const totalTests = allProgress.reduce((s,p) => s + (p.testScores||[]).length, 0);
+  const avgScore = allProgress.length ? Math.round(allProgress.flatMap(p => p.testScores||[]).reduce((s,t,_,a) => s + t.score/a.length, 0)) : 0;
+
+  document.getElementById('stat-row').innerHTML = [
+    { icon:'🏫', label:'Classrooms', num: tState.classrooms.length, cls:'blue' },
+    { icon:'👩‍🎓', label:'Students', num: uniqueIds.length, cls:'yellow' },
+    { icon:'📝', label:'Tests Taken', num: totalTests, cls:'green' },
+    { icon:'⭐', label:'Avg Test Score', num: (isNaN(avgScore)?0:avgScore)+'%', cls:'pink' }
+  ].slice(0,3).map(s => `
+    <div class="stat-card">
+      <div class="stat-icon ${s.cls}">${s.icon}</div>
+      <div class="stat-body"><div class="num">${s.num}</div><div class="lbl">${s.label}</div></div>
+    </div>`).join('');
+
+  // Quick classrooms
+  const dcls = document.getElementById('dash-classrooms');
+  if (!tState.classrooms.length) {
+    dcls.innerHTML = `<div class="card"><div class="empty-state"><span class="ei">🏫</span><h3>No classrooms yet</h3><p>Create your first classroom to get started!</p></div></div>`;
+  } else {
+    dcls.innerHTML = tState.classrooms.map(cls => `
+      <div class="card" style="margin-bottom:12px;cursor:pointer" onclick="openClassDetail('${cls.id}')">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-family:var(--font-h);font-weight:800;font-size:1rem">${cls.name}</div>
+            <div style="font-size:.82rem;color:#64748b">${cls.studentIds.length} students · Code: <strong>${cls.inviteCode}</strong></div>
+          </div>
+          <div style="font-size:1.3rem">→</div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Recent activity
+  const acts = allProgress.flatMap(p =>
+    (p.testScores||[]).map(t => ({...t, userId: p.userId, unitId: p.unitId}))
+  ).sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0,6);
+
+  const actEl = document.getElementById('dash-activity');
+  if (!acts.length) {
+    actEl.innerHTML = '<div class="empty-state" style="padding:24px"><span class="ei">📊</span><p>No test activity yet</p></div>';
+  } else {
+    actEl.innerHTML = `<table class="data-table" style="width:100%">
+      <thead><tr><th>Student</th><th>Unit</th><th>Score</th><th>Date</th></tr></thead>
+      <tbody>${acts.map(a => {
+        const user = ML.getUser(a.userId);
+        const unit = ML.CURRICULUM.find(u => u.id === a.unitId);
+        const pillCls = a.score>=80?'high':a.score>=60?'mid':'low';
+        return `<tr>
+          <td style="font-family:var(--font-h);font-weight:700">@${user?.username||'?'}</td>
+          <td>${unit?.emoji||''} ${unit?.title?.split('—')[0]||''}</td>
+          <td><span class="score-pill ${pillCls}">${a.score}%</span></td>
+          <td style="color:#94a3b8;font-size:.82rem">${a.date}</td>
+        </tr>`;
+      }).join('')}</tbody></table>`;
+  }
+}
+
+// ── Classrooms page ───────────────────────────────────
+function renderClassrooms() {
+  loadTeacherData();
+  const grid = document.getElementById('classrooms-grid');
+  if (!tState.classrooms.length) {
+    grid.innerHTML = `<div class="card" style="grid-column:1/-1"><div class="empty-state"><span class="ei">🏫</span><h3>No classrooms yet</h3><p>Create your first classroom with the button above!</p></div></div>`;
+    return;
+  }
+  grid.innerHTML = tState.classrooms.map(cls => {
+    const progs = ML.getUsersProgress(cls.studentIds);
+    const avgComp = cls.studentIds.length ? Math.round(progs.reduce((s,p) => s + (p.lessonsCompleted||[]).length, 0) / cls.studentIds.length) : 0;
+    return `
+    <div class="classroom-card" onclick="openClassDetail('${cls.id}')">
+      <div class="cls-card-header">
+        <div class="cls-card-icon">🏫</div>
+        <span class="invite-code">${cls.inviteCode}</span>
+      </div>
+      <div class="cls-card-info">
+        <h3>${cls.name}</h3>
+        <div class="cls-meta">
+          <span>👩‍🎓 ${cls.studentIds.length} students</span>
+          <span>📚 ~${avgComp} lessons done avg</span>
+        </div>
+      </div>
+      <div class="cls-actions">
+        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openClassDetail('${cls.id}')">View Students</button>
+        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();showInviteCode('${cls.inviteCode}')">🔑 Invite Code</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openClassDetail(clsId) {
+  tState.activeClsId = clsId;
+  const cls = ML.getClassroom(clsId);
+  document.getElementById('cls-detail-name').textContent = cls.name;
+  document.getElementById('cls-detail-code').textContent = cls.inviteCode;
+  populateAsgnClassSelect(cls);
+
+  // Students
+  const db = ML.loadDB();
+  const students = cls.studentIds.map(id => ML.getUser(id)).filter(Boolean);
+  const stuList = document.getElementById('cls-students-list');
+  if (!students.length) {
+    stuList.innerHTML = `<div class="empty-state" style="padding:20px"><span class="ei">👩‍🎓</span><h3>No students yet</h3><p>Share the code <strong>${cls.inviteCode}</strong> with your class!</p></div>`;
+  } else {
+    stuList.innerHTML = students.map(s => {
+      const totalXP = ML.CURRICULUM.reduce((sum,u) => sum + (ML.getProgress(s.id,u.id).xp||0), 0);
+      return `<div class="student-row" onclick="openStudentDetail('${s.id}','${clsId}')">
+        <div class="stu-avatar">${s.username.charAt(0).toUpperCase()}</div>
+        <div class="stu-info"><div class="sname">@${s.username}</div></div>
+        <span class="stu-xp">⭐ ${totalXP} XP</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Assignments
+  const asgns = ML.getAssignmentsForClassroom(clsId);
+  const asgnEl = document.getElementById('cls-assignments-list');
+  if (!asgns.length) {
+    asgnEl.innerHTML = `<div class="empty-state" style="padding:20px"><span class="ei">📋</span><h3>No assignments yet</h3><p>Use "+ New Assignment" to set one.</p></div>`;
+  } else {
+    asgnEl.innerHTML = `<table class="data-table" style="width:100%">
+      <thead><tr><th>Title</th><th>Unit</th><th>Due</th></tr></thead>
+      <tbody>${asgns.map(a => {
+        const unit = ML.CURRICULUM.find(u=>u.id===a.unitId);
+        return `<tr><td style="font-family:var(--font-h);font-weight:700">${a.title}</td>
+          <td>${unit?.emoji||''} ${unit?.title?.split('—')[0]||a.unitId}</td>
+          <td style="color:#64748b">${a.dueDate}</td></tr>`;
+      }).join('')}</tbody></table>`;
+  }
+
+  showPage('cls-detail');
+}
+
+function openStudentDetail(stuId, clsId) {
+  tState.activeStuId = stuId;
+  const student = ML.getUser(stuId);
+  document.getElementById('stu-detail-name').textContent = '@' + student.username;
+  document.getElementById('stu-detail-meta').textContent = `Joined ${student.createdAt.split('T')[0]}`;
+  document.getElementById('stu-back-btn').onclick = () => openClassDetail(clsId || tState.activeClsId);
+
+  const totalXP = ML.CURRICULUM.reduce((s,u) => s + (ML.getProgress(stuId,u.id).xp||0), 0);
+  const totalLessons = ML.CURRICULUM.reduce((s,u) => s + (ML.getProgress(stuId,u.id).lessonsCompleted||[]).length, 0);
+  const allTests = ML.CURRICULUM.flatMap(u => (ML.getProgress(stuId,u.id).testScores||[]).map(t=>t.score));
+  const bestTest = allTests.length ? Math.max(...allTests) : null;
+
+  document.getElementById('stu-stats-row').innerHTML = [
+    { num: totalXP+' XP', lbl:'Total XP', icon:'⭐', cls:'yellow' },
+    { num: totalLessons, lbl:'Lessons Done', icon:'📚', cls:'blue' },
+    { num: allTests.length, lbl:'Tests Taken', icon:'📝', cls:'green' },
+    { num: bestTest!==null?bestTest+'%':'—', lbl:'Best Score', icon:'🏆', cls:'pink' }
+  ].slice(0,2).map(s => `
+    <div class="stat-card">
+      <div class="stat-icon ${s.cls}">${s.icon}</div>
+      <div class="stat-body"><div class="num">${s.num}</div><div class="lbl">${s.lbl}</div></div>
+    </div>`).join('');
+
+  // Unit progress
+  document.getElementById('stu-unit-progress').innerHTML = ML.CURRICULUM.map(unit => {
+    const prog = ML.getProgress(stuId, unit.id);
+    const done = (prog.lessonsCompleted||[]).length;
+    const total = unit.lessons.length;
+    const pct = Math.round((done/total)*100);
+    return `<div class="unit-progress-row">
+      <span class="unit-emoji-sm">${unit.emoji}</span>
+      <span class="unit-name">${unit.title.split('—')[1]?.trim()||unit.title}</span>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%"></div></div>
+      <span class="unit-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  // Test history
+  document.getElementById('stu-test-tbody').innerHTML = ML.CURRICULUM.map(unit => {
+    const prog = ML.getProgress(stuId, unit.id);
+    const scores = prog.testScores || [];
+    const best = scores.length ? Math.max(...scores.map(s=>s.score)) : null;
+    const last = scores.length ? scores[scores.length-1].score : null;
+    const pillCls = s => s>=80?'high':s>=60?'mid':'low';
+    return `<tr>
+      <td>${unit.emoji} ${unit.title.split('—')[0]}</td>
+      <td>${scores.length}</td>
+      <td>${best!==null?`<span class="score-pill ${pillCls(best)}">${best}%</span>`:'<span class="score-pill none">—</span>'}</td>
+      <td>${last!==null?`<span class="score-pill ${pillCls(last)}">${last}%</span>`:'<span class="score-pill none">—</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+  document.getElementById('page-stu-detail').classList.remove('hidden');
+}
+
+// ── Assignments ───────────────────────────────────────
+function renderAssignments() {
+  loadTeacherData();
+  const allAsgns = tState.classrooms.flatMap(c => ML.getAssignmentsForClassroom(c.id).map(a => ({...a, cls: c})));
+  const tbody = document.getElementById('assignments-tbody');
+  if (!allAsgns.length) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:32px;font-family:var(--font-h)">No assignments yet — create one!</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = allAsgns.map(a => {
+    const unit = ML.CURRICULUM.find(u=>u.id===a.unitId);
+    return `<tr>
+      <td style="font-family:var(--font-h);font-weight:700">${a.title}</td>
+      <td>${a.cls?.name||'—'}</td>
+      <td>${unit?.emoji||''} ${unit?.title?.split('—')[0]||a.unitId}</td>
+      <td style="color:#64748b">${a.dueDate}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Progress ──────────────────────────────────────────
+function renderProgressSetup() {
+  loadTeacherData();
+  const sel = document.getElementById('prog-cls-select');
+  sel.innerHTML = '<option value="">— Choose a classroom —</option>';
+  tState.classrooms.forEach(c => {
+    const opt = document.createElement('option'); opt.value=c.id; opt.textContent=c.name; sel.appendChild(opt);
+  });
+}
+
+function renderProgressTable() {
+  const clsId = document.getElementById('prog-cls-select').value;
+  const wrap = document.getElementById('progress-table-wrap');
+  if (!clsId) { wrap.innerHTML = '<div class="empty-state"><span class="ei">📊</span><h3>Select a classroom</h3></div>'; return; }
+  const cls = ML.getClassroom(clsId);
+  const students = cls.studentIds.map(id => ML.getUser(id)).filter(Boolean);
+  if (!students.length) { wrap.innerHTML = '<div class="empty-state"><span class="ei">👩‍🎓</span><h3>No students in this class yet</h3></div>'; return; }
+
+  const unitCols = ML.CURRICULUM.map(u => `<th>${u.emoji} ${u.title.split('—')[0]}</th>`).join('');
+  const rows = students.map(s => {
+    const totalXP = ML.CURRICULUM.reduce((sum,u) => sum + (ML.getProgress(s.id,u.id).xp||0), 0);
+    const unitCells = ML.CURRICULUM.map(u => {
+      const prog = ML.getProgress(s.id,u.id);
+      const scores = prog.testScores||[];
+      const best = scores.length ? Math.max(...scores.map(t=>t.score)) : null;
+      const done = (prog.lessonsCompleted||[]).length;
+      const total = u.lessons.length;
+      const pct = Math.round((done/total)*100);
+      const pillCls = best===null?'none':best>=80?'high':best>=60?'mid':'low';
+      return `<td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="progress-mini"><div class="progress-mini-fill" style="width:${pct}%"></div></div>
+          ${best!==null?`<span class="score-pill ${pillCls}" style="font-size:.75rem;padding:2px 7px">${best}%</span>`:'<span style="color:#cbd5e1;font-size:.8rem">—</span>'}
+        </div>
+      </td>`;
+    }).join('');
+    return `<tr onclick="openStudentDetail('${s.id}','${clsId}')" style="cursor:pointer">
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="stu-avatar" style="width:30px;height:30px;font-size:.75rem">${s.username.charAt(0).toUpperCase()}</div>
+          <div><div style="font-family:var(--font-h);font-weight:700;font-size:.9rem">@${s.username}</div></div>
+        </div>
+      </td>
+      <td><span class="score-pill mid">⭐ ${totalXP}</span></td>
+      ${unitCells}
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<div style="overflow-x:auto"><table class="data-table" style="width:100%;min-width:600px">
+    <thead><tr><th>Student</th><th>Total XP</th>${unitCols}</tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+// ── Modals ────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeBdModal(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+
+function showInviteCode(code) {
+  document.getElementById('invite-code-display').textContent = code;
+  openModal('modal-invite');
+}
+
+function copyInviteCode() {
+  const code = document.getElementById('invite-code-display').textContent;
+  navigator.clipboard.writeText(code).then(() => showToast('✅ Code copied!')).catch(() => showToast('Code: ' + code));
+}
+
+function copyDetailCode() {
+  const code = document.getElementById('cls-detail-code').textContent;
+  navigator.clipboard.writeText(code).then(() => showToast('✅ Code copied!')).catch(() => showToast('Code: ' + code));
+}
+
+function populateAssignmentSelects() {
+  loadTeacherData();
+  ML.CURRICULUM.forEach(u => {
+    const opt = document.createElement('option'); opt.value=u.id; opt.textContent=u.emoji+' '+u.title; document.getElementById('nasgn-unit').appendChild(opt);
+  });
+  populateAsgnClassSelect();
+}
+
+function populateAsgnClassSelect(activeClass) {
+  const sel = document.getElementById('nasgn-cls');
+  sel.innerHTML = '<option value="">— Choose classroom —</option>';
+  loadTeacherData();
+  tState.classrooms.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id; opt.textContent = c.name;
+    if (activeClass && c.id === activeClass.id) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function submitNewClass(e) {
+  e.preventDefault();
+  const name = document.getElementById('ncls-name').value.trim();
+  if (!name) return;
+  ML.createClassroom({ name, teacherId: tState.user.id });
+  closeModal('modal-new-class');
+  document.getElementById('ncls-name').value = '';
+  loadTeacherData();
+  populateAsgnClassSelect();
+  renderClassrooms();
+  showToast('🏫 Classroom created!');
+}
+
+function submitNewAsgn(e) {
+  e.preventDefault();
+  const title = document.getElementById('nasgn-title').value.trim();
+  const clsId = document.getElementById('nasgn-cls').value;
+  const unitId = document.getElementById('nasgn-unit').value;
+  const due = document.getElementById('nasgn-due').value;
+  if (!title || !clsId || !unitId || !due) return;
+  ML.createAssignment({ classroomId: clsId, unitId, title, dueDate: due });
+  closeModal('modal-new-asgn');
+  document.getElementById('nasgn-title').value = '';
+  document.getElementById('nasgn-due').value = '';
+  if (tState.activeClsId) openClassDetail(tState.activeClsId);
+  renderAssignments();
+  showToast('📋 Assignment set!');
+}
+
+// ── Helpers ───────────────────────────────────────────
+function showErr(id, msg) { const el=document.getElementById(id); el.textContent=msg; el.classList.add('show'); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

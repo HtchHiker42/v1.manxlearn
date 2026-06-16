@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ManxLearn — Learn the Manx Language</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#2563EB;--primary-dark:#1d4ed8;--primary-light:#dbeafe;
+  --secondary:#F59E0B;--secondary-dark:#d97706;--secondary-light:#fef3c7;
+  --accent:#EC4899;--accent-dark:#db2777;--accent-light:#fce7f3;
+  --success:#10B981;--success-dark:#059669;
+  --bg:#EFF6FF;--fg:#0F172A;--muted:#F1F5FD;--border:#C7D9FA;
+  --font-h:'Baloo 2',cursive;--font-b:'Comic Neue',cursive;
+  --r:20px;--r-sm:12px;--r-lg:28px;
+  --shadow-clay:0 4px 0 var(--border),0 8px 24px rgba(37,99,235,.12);
+}
+body{font-family:var(--font-b);background:var(--bg);color:var(--fg);min-height:100vh;overflow-x:hidden}
+
+/* ── Nav ── */
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 40px;background:#fff;border-bottom:3px solid var(--border);position:sticky;top:0;z-index:100}
+.nav-logo{font-family:var(--font-h);font-size:1.6rem;font-weight:800;color:var(--primary);display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-badge{background:var(--primary);color:#fff;border-radius:10px;padding:2px 10px;font-size:1rem}
+.nav-links{display:flex;gap:12px}
+
+/* ── Buttons ── */
+.btn{font-family:var(--font-h);font-weight:700;border:none;cursor:pointer;border-radius:var(--r-sm);padding:12px 24px;font-size:1rem;transition:transform 150ms ease-out,box-shadow 150ms ease-out;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+.btn:active{transform:translateY(2px)!important}
+.btn-primary{background:var(--primary);color:#fff;border:3px solid var(--primary-dark);box-shadow:0 4px 0 var(--primary-dark)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 5px 0 var(--primary-dark)}
+.btn-secondary{background:var(--secondary);color:#fff;border:3px solid var(--secondary-dark);box-shadow:0 4px 0 var(--secondary-dark)}
+.btn-secondary:hover{transform:translateY(-1px);box-shadow:0 5px 0 var(--secondary-dark)}
+.btn-accent{background:var(--accent);color:#fff;border:3px solid var(--accent-dark);box-shadow:0 4px 0 var(--accent-dark)}
+.btn-accent:hover{transform:translateY(-1px);box-shadow:0 5px 0 var(--accent-dark)}
+.btn-outline{background:#fff;color:var(--primary);border:3px solid var(--border);box-shadow:0 4px 0 var(--border)}
+.btn-outline:hover{transform:translateY(-1px);box-shadow:0 5px 0 var(--border);border-color:var(--primary)}
+.btn-lg{padding:18px 36px;font-size:1.2rem;border-radius:var(--r)}
+
+/* ── Hero ── */
+.hero{padding:80px 40px 60px;text-align:center;position:relative;overflow:hidden}
+.hero-bubbles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.bubble{position:absolute;border-radius:50%;opacity:.18;animation:float 6s ease-in-out infinite}
+.bubble:nth-child(1){width:180px;height:180px;background:var(--primary);top:-40px;left:10%;animation-delay:0s}
+.bubble:nth-child(2){width:120px;height:120px;background:var(--secondary);top:20px;right:12%;animation-delay:1.5s}
+.bubble:nth-child(3){width:80px;height:80px;background:var(--accent);bottom:40px;left:18%;animation-delay:3s}
+.bubble:nth-child(4){width:140px;height:140px;background:var(--success);bottom:20px;right:8%;animation-delay:0.8s}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
+
+.hero-tag{display:inline-block;background:var(--primary-light);color:var(--primary);font-family:var(--font-h);font-weight:700;border-radius:999px;padding:6px 18px;font-size:.9rem;margin-bottom:20px;border:2px solid var(--border)}
+.hero h1{font-family:var(--font-h);font-size:clamp(2.4rem,6vw,4rem);font-weight:800;line-height:1.15;margin-bottom:16px}
+.hero h1 span{color:var(--primary)}
+.hero p{font-size:1.15rem;color:#475569;max-width:560px;margin:0 auto 36px;line-height:1.7}
+.hero-cta{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+
+/* ── Mascot ── */
+.mascot-wrap{margin:40px auto 0;display:flex;justify-content:center}
+.mascot{width:180px;height:180px;background:var(--primary-light);border:4px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:5rem;box-shadow:var(--shadow-clay);animation:float 4s ease-in-out infinite}
+
+/* ── Choose path section ── */
+.section-choose{padding:60px 40px;max-width:1000px;margin:0 auto}
+.section-choose h2{font-family:var(--font-h);font-size:2rem;font-weight:800;text-align:center;margin-bottom:8px}
+.section-choose p{text-align:center;color:#64748b;margin-bottom:40px;font-size:1.05rem}
+.path-cards{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:640px){.path-cards{grid-template-columns:1fr}}
+.path-card{background:#fff;border:3px solid var(--border);border-radius:var(--r-lg);padding:36px 32px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;box-shadow:var(--shadow-clay);transition:transform 200ms ease-out,box-shadow 200ms ease-out;text-decoration:none;color:var(--fg)}
+.path-card:hover{transform:translateY(-4px);box-shadow:0 8px 0 var(--border),0 16px 40px rgba(37,99,235,.15)}
+.path-icon{width:96px;height:96px;border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:3rem;border:3px solid transparent;box-shadow:0 4px 0 rgba(0,0,0,.1)}
+.path-card.student .path-icon{background:var(--primary-light);border-color:var(--primary);color:var(--primary)}
+.path-card.teacher .path-icon{background:var(--secondary-light);border-color:var(--secondary);color:var(--secondary-dark)}
+.path-card h3{font-family:var(--font-h);font-size:1.5rem;font-weight:800}
+.path-card p{color:#64748b;line-height:1.6;font-size:.95rem}
+.path-card .tag{background:var(--muted);border:2px solid var(--border);border-radius:999px;padding:4px 14px;font-size:.8rem;font-weight:700;font-family:var(--font-h)}
+.path-card.student .tag{color:var(--primary)}
+.path-card.teacher .tag{color:var(--secondary-dark)}
+
+/* ── Features ── */
+.section-features{padding:60px 40px;background:#fff;border-top:3px solid var(--border);border-bottom:3px solid var(--border)}
+.features-inner{max-width:1000px;margin:0 auto}
+.section-features h2{font-family:var(--font-h);font-size:2rem;font-weight:800;text-align:center;margin-bottom:40px}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}
+.feature-card{background:var(--muted);border:2px solid var(--border);border-radius:var(--r);padding:24px;display:flex;flex-direction:column;gap:12px}
+.feature-card .fi{font-size:2rem;width:56px;height:56px;background:#fff;border-radius:14px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 0 var(--border)}
+.feature-card h4{font-family:var(--font-h);font-weight:700;font-size:1rem}
+.feature-card p{font-size:.88rem;color:#64748b;line-height:1.6}
+
+/* ── Footer ── */
+footer{text-align:center;padding:32px 40px;border-top:3px solid var(--border);font-size:.85rem;color:#94a3b8}
+footer strong{color:var(--primary)}
+.footer-flags{font-size:1.5rem;margin-bottom:8px}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="index.html">
+    <span class="logo-badge">ML</span> ManxLearn
+  </a>
+  <div class="nav-links">
+    <a class="btn btn-outline" href="student.html">Student Login</a>
+    <a class="btn btn-secondary" href="teacher.html">Teacher Login</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-bubbles">
+    <div class="bubble"></div><div class="bubble"></div>
+    <div class="bubble"></div><div class="bubble"></div>
+  </div>
+  <span class="hero-tag">🏝️ Isle of Man • Tech Demo</span>
+  <h1>Learn <span>Manx Gaelic</span><br>the fun way!</h1>
+  <p>A safe, joyful language learning adventure for primary school children. No email needed — just pick a username and start!</p>
+  <div class="hero-cta">
+    <a class="btn btn-primary btn-lg" href="student.html">I'm a Student</a>
+    <a class="btn btn-outline btn-lg" href="teacher.html">I'm a Teacher</a>
+  </div>
+  <div class="mascot-wrap">
+    <div class="mascot">🦤</div>
+  </div>
+</section>
+
+<section class="section-choose">
+  <h2>Who's joining today?</h2>
+  <p>Two portals — one for learning, one for teaching.</p>
+  <div class="path-cards">
+    <a class="path-card student" href="student.html">
+      <div class="path-icon">🎒</div>
+      <span class="tag">Students age 7–11</span>
+      <h3>Student Portal</h3>
+      <p>Explore Manx through fun match-up exercises, pattern games, and unit challenges. Earn XP and unlock new units!</p>
+      <span class="btn btn-primary" style="margin-top:8px">Start Learning →</span>
+    </a>
+    <a class="path-card teacher" href="teacher.html">
+      <div class="path-icon">📋</div>
+      <span class="tag">Teachers & Educators</span>
+      <h3>Teacher Portal</h3>
+      <p>Create classrooms, invite students with a code, track progress on unit tests, and set assignments for your class.</p>
+      <span class="btn btn-secondary" style="margin-top:8px">Open Dashboard →</span>
+    </a>
+  </div>
+</section>
+
+<section class="section-features">
+  <div class="features-inner">
+    <h2>What makes ManxLearn special?</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="fi">📚</div>
+        <h4>Structured Units</h4>
+        <p>Greetings, Numbers, Colours and more. Each unit builds on the last with grammar milestones.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fi">🧩</div>
+        <h4>Match-up & Patterns</h4>
+        <p>Exercises designed to build recognition and recall — educational, not just game-like.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fi">📝</div>
+        <h4>Unit Tests</h4>
+        <p>End-of-unit tests with scored results. Students can retake to improve their score.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fi">🔐</div>
+        <h4>EU-Safe & Private</h4>
+        <p>No email addresses. Passwords encrypted with SHA-256 hashing. Fully GDPR-aware design.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fi">🏫</div>
+        <h4>Classroom Tools</h4>
+        <p>Teachers create classrooms with invite codes. Track every student's progress and set assignments.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fi">⭐</div>
+        <h4>XP & Progress</h4>
+        <p>Students earn experience points as they complete lessons and tests, visualised in their journey.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-flags">🏝️ 🇮🇲</div>
+  <p><strong>ManxLearn</strong> — A digital tool for the Manx Gaelic language.</p>
+  <p style="margin-top:6px">Tech Demo · No personal data stored · EU compliant design</p>
+</footer>
+
+</body>
+</html>
