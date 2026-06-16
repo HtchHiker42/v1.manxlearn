@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ManxLearn — Student Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<!-- ── Top bar (hidden until logged in) ──────────────────────────────────── -->
+<nav class="topnav hidden" id="s-topbar">
+  <a class="nav-logo" href="/"><span>ML</span> ManxLearn</a>
+  <div class="nav-right" id="nav-right">
+    <div class="xp-pill" id="xp-display">⭐ 0 XP</div>
+    <button class="btn btn-outline btn-sm" onclick="doLogout()">Log out</button>
+  </div>
+</nav>
+
+<!-- ── VIEW: Login ────────────────────────────────────────────────────────── -->
+<div id="view-login" class="view active" style="margin:0 auto">
+  <div class="login-hero">
+    <span class="login-mascot">🦤</span>
+    <h1>Welcome back!</h1>
+    <p>Log in or create an account to start learning Manx</p>
+  </div>
+  <div class="card" style="width:100%;max-width:420px">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('login')">Log In</button>
+      <button class="tab-btn" onclick="switchTab('register')">New Account</button>
+    </div>
+    <div id="auth-err" class="error-msg"></div>
+
+    <form id="form-login" onsubmit="doLogin(event)">
+      <div class="form-group">
+        <label for="l-username">Username</label>
+        <input id="l-username" type="text" placeholder="e.g. finn_mac" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label for="l-password">Password</label>
+        <input id="l-password" type="password" autocomplete="current-password" placeholder="Your secret password" required>
+      </div>
+      <button class="btn btn-primary btn-full btn-lg" type="submit" id="btn-login">Log In</button>
+    </form>
+
+    <form id="form-register" class="hidden" onsubmit="doRegister(event)">
+      <div class="form-group">
+        <label for="r-username">Choose a Username</label>
+        <input id="r-username" type="text" placeholder="e.g. finn_mac" autocomplete="username" required pattern="[a-zA-Z0-9_]{3,30}">
+        <div class="hint">Letters, numbers, underscores only. No email needed!</div>
+      </div>
+      <div class="form-group">
+        <label for="r-password">Choose a Password</label>
+        <input id="r-password" type="password" autocomplete="new-password" placeholder="Make it secret!" required minlength="6">
+      </div>
+      <button class="btn btn-success btn-full btn-lg" type="submit" id="btn-register">Create Account</button>
+    </form>
+  </div>
+  <p style="text-align:center;margin-top:14px;font-size:.83rem;color:#94a3b8">
+    Are you a teacher? <a href="/teacher.html" style="color:var(--primary);font-weight:700">Teacher portal →</a>
+  </p>
+</div>
+
+<!-- ── VIEW: Home ─────────────────────────────────────────────────────────── -->
+<div id="view-home" class="view">
+  <div class="home-header">
+    <h2 id="home-greeting">Moghrey mie!</h2>
+    <p>Keep going — you're doing amazing! 🌟</p>
+    <div class="xp-bar-wrap"><div class="xp-bar-fill" id="xp-bar" style="width:0%"></div></div>
+    <div class="xp-label" id="xp-label">0 / 300 XP to next level</div>
+  </div>
+
+  <div id="classroom-banner" class="classroom-banner hidden">
+    <span>🏫</span>
+    <div><strong id="cls-name-banner">Class</strong> — your teacher can see your progress!</div>
+  </div>
+
+  <div id="asgn-strip" class="asgn-strip hidden">
+    <h4>📋 Assignment due soon</h4>
+    <div id="asgn-content"></div>
+  </div>
+
+  <div id="join-banner" class="card" style="margin-bottom:22px;display:none">
+    <p style="font-family:var(--font-h);font-weight:700;margin-bottom:6px">🏫 Join your classroom</p>
+    <p style="font-size:.86rem;color:#64748b;margin-bottom:10px">Ask your teacher for the invite code</p>
+    <div class="join-form">
+      <input id="invite-code-input" type="text" placeholder="e.g. MANX4B" maxlength="8"
+             oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+      <button class="btn btn-primary" id="btn-join" onclick="doJoinClass()">Join</button>
+    </div>
+    <div id="join-error" class="error-msg" style="margin-top:8px"></div>
+  </div>
+
+  <div class="journey" id="unit-journey"></div>
+</div>
+
+<!-- ── VIEW: Unit detail ──────────────────────────────────────────────────── -->
+<div id="view-unit" class="view">
+  <button class="back-row" onclick="showView('home');renderHome()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Back to Journey
+  </button>
+  <div class="unit-detail-header" id="unit-detail-header"></div>
+  <div class="lesson-list" id="lesson-list"></div>
+</div>
+
+<!-- ── VIEW: Exercise (matchup / pattern) ────────────────────────────────── -->
+<div id="view-exercise" class="view">
+  <button class="back-row" onclick="exitLesson()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Exit Lesson
+  </button>
+  <div class="exercise-header">
+    <div class="prog" id="ex-prog">Lesson</div>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="ex-prog-bar" style="width:0%"></div></div>
+    <h3 id="ex-title"></h3>
+    <p id="ex-subtitle"></p>
+  </div>
+  <div id="feedback-bar" class="feedback-bar">
+    <div class="fb-icon" id="fb-icon"></div>
+    <div class="fb-text"><h4 id="fb-heading"></h4><p id="fb-body"></p></div>
+  </div>
+  <div id="exercise-body"></div>
+  <button class="btn btn-primary btn-full btn-lg hidden" id="btn-next-ex" style="margin-top:12px">Continue →</button>
+</div>
+
+<!-- ── VIEW: Milestone ────────────────────────────────────────────────────── -->
+<div id="view-milestone" class="view">
+  <button class="back-row" onclick="exitLesson()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Back to Unit
+  </button>
+  <div class="milestone-card">
+    <span class="milestone-icon">📖</span>
+    <h2 id="ms-title">Grammar Milestone</h2>
+    <span class="concept" id="ms-concept"></span>
+    <div class="milestone-explanation" id="ms-explanation"></div>
+    <button class="btn btn-secondary btn-full btn-lg" onclick="completeMilestone()">Got it! ✓</button>
+  </div>
+</div>
+
+<!-- ── VIEW: Unit test ────────────────────────────────────────────────────── -->
+<div id="view-test" class="view">
+  <button class="back-row" onclick="showView('unit')">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Exit Test
+  </button>
+  <div class="test-q-header">
+    <div class="q-count" id="test-q-count">Question 1 of 5</div>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="test-prog-bar" style="width:0%"></div></div>
+  </div>
+  <div class="test-question">
+    <h3 id="test-q-text"></h3>
+    <div class="test-options" id="test-options"></div>
+  </div>
+  <div id="feedback-bar-test" class="feedback-bar"></div>
+  <button class="btn btn-primary btn-full btn-lg hidden" id="btn-next-test" style="margin-top:12px" onclick="nextTestQ()">Next →</button>
+</div>
+
+<!-- ── VIEW: Results ──────────────────────────────────────────────────────── -->
+<div id="view-results" class="view">
+  <div class="results-view">
+    <div style="font-size:2.8rem;margin-bottom:6px" id="results-emoji">🎉</div>
+    <div class="score-ring-wrap">
+      <svg class="score-ring-svg" width="150" height="150" viewBox="0 0 150 150">
+        <circle cx="75" cy="75" r="60" fill="none" stroke="#e4ecfc" stroke-width="11"/>
+        <circle id="score-ring" cx="75" cy="75" r="60" fill="none" stroke="#2563EB" stroke-width="11"
+          stroke-dasharray="377" stroke-dashoffset="377" stroke-linecap="round"
+          style="transition:stroke-dashoffset 1s ease-out"/>
+      </svg>
+      <div class="score-ring-text">
+        <span class="big" id="score-pct">0%</span>
+        <span class="label">Score</span>
+      </div>
+    </div>
+    <div class="results-msg" id="results-msg">Great job!</div>
+    <div class="results-sub" id="results-sub"></div>
+    <div class="history-list" id="results-history"></div>
+    <div class="results-actions">
+      <button class="btn btn-outline btn-lg" style="flex:1" onclick="retakeTest()">Retake</button>
+      <button class="btn btn-primary btn-lg" style="flex:1" onclick="showView('home');renderHome()">Back to Journey</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="/js/api.js"></script>
+<script src="/js/student.js"></script>
+</body>
+</html>

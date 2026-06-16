@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ManxLearn — Learn the Manx Language</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="nav-logo" href="/"><span>ML</span> ManxLearn</a>
+  <div class="nav-right" id="nav-right">
+    <a class="btn btn-outline btn-sm" href="/student.html">Student Login</a>
+    <a class="btn btn-secondary btn-sm" href="/teacher.html">Teacher Login</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-bubbles">
+    <div class="bubble"></div><div class="bubble"></div>
+    <div class="bubble"></div><div class="bubble"></div>
+  </div>
+  <span class="hero-tag">🏝️ Isle of Man · Tech Demo</span>
+  <h1>Learn <span>Manx Gaelic</span><br>the fun way!</h1>
+  <p>A safe, joyful language learning adventure for primary school children. No email needed — just pick a username and start!</p>
+  <div class="hero-cta">
+    <a class="btn btn-primary btn-lg" href="/student.html">I'm a Student</a>
+    <a class="btn btn-outline btn-lg" href="/teacher.html">I'm a Teacher</a>
+  </div>
+  <div class="mascot" style="margin:32px auto 0">🦤</div>
+</section>
+
+<section style="max-width:860px;margin:0 auto;padding:0 24px 16px">
+  <h2 style="font-family:var(--font-h);font-size:1.7rem;font-weight:800;text-align:center;margin-bottom:8px">Who's joining today?</h2>
+  <p style="text-align:center;color:#64748b;margin-bottom:28px">Two portals — one for learning, one for teaching.</p>
+  <div class="path-cards">
+    <a class="path-card student" href="/student.html">
+      <div class="path-icon">🎒</div>
+      <h3>Student Portal</h3>
+      <p>Explore Manx through match-up exercises, pattern games and unit tests. Earn XP and unlock new units!</p>
+      <span class="btn btn-primary" style="margin-top:6px">Start Learning →</span>
+    </a>
+    <a class="path-card teacher" href="/teacher.html">
+      <div class="path-icon">📋</div>
+      <h3>Teacher Portal</h3>
+      <p>Create classrooms with invite codes, track student progress on unit tests, and set assignments.</p>
+      <span class="btn btn-secondary" style="margin-top:6px">Open Dashboard →</span>
+    </a>
+  </div>
+</section>
+
+<section class="features">
+  <h2>What makes ManxLearn special?</h2>
+  <div class="feat-grid">
+    <div class="feat-card"><div class="fi">📚</div><h4>Structured Units</h4><p>Greetings, Numbers, Colours — each with grammar milestones.</p></div>
+    <div class="feat-card"><div class="fi">🧩</div><h4>Match-up & Patterns</h4><p>Exercises designed to build recognition and recall.</p></div>
+    <div class="feat-card"><div class="fi">📝</div><h4>Unit Tests</h4><p>End-of-unit tests with scored results. Retake to improve.</p></div>
+    <div class="feat-card"><div class="fi">🔐</div><h4>EU-Safe & Private</h4><p>No email. Passwords hashed with bcrypt. JWT sessions. No PII stored.</p></div>
+    <div class="feat-card"><div class="fi">🏫</div><h4>Classroom Tools</h4><p>Teachers create classrooms with codes. Track every student's progress.</p></div>
+    <div class="feat-card"><div class="fi">⭐</div><h4>XP & Progress</h4><p>Students earn XP completing lessons and tests.</p></div>
+  </div>
+</section>
+
+<footer>
+  <p>🏝️ <strong>ManxLearn</strong> — A digital tool for the Manx Gaelic language.</p>
+  <p style="margin-top:5px">Passwords hashed with bcrypt · Sessions secured with JWT · No personal data stored</p>
+</footer>
+
+<div id="toast"></div>
+<script src="/js/api.js"></script>
+<script>initNav();</script>
+</body>
+</html>

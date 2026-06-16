@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ManxLearn — Teacher Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="nav-logo" href="/"><span>ML</span> ManxLearn</a>
+  <div class="nav-right" id="nav-right">
+    <a class="btn btn-outline btn-sm" href="/student.html">Student Portal</a>
+  </div>
+</nav>
+
+<!-- ── Login ──────────────────────────────────────────────────────────────── -->
+<div id="view-login-t" style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 64px);padding:24px">
+  <div style="width:100%;max-width:420px">
+    <div class="login-hero">
+      <span class="login-mascot">📋</span>
+      <h1>Teacher Portal</h1>
+      <p>Manage classrooms and track student progress</p>
+    </div>
+    <div class="card">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('login')">Log In</button>
+        <button class="tab-btn" onclick="switchTab('register')">Register</button>
+      </div>
+      <div id="t-err" class="error-msg"></div>
+
+      <form id="form-login-t" onsubmit="doLogin(event)">
+        <div class="form-group">
+          <label>Username</label>
+          <input id="tl-user" type="text" placeholder="e.g. ms_kermode" autocomplete="username" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input id="tl-pass" type="password" autocomplete="current-password" placeholder="Your password" required>
+        </div>
+        <button class="btn btn-secondary btn-full btn-lg" type="submit" id="btn-tlogin">Log In as Teacher</button>
+      </form>
+
+      <form id="form-reg-t" class="hidden" onsubmit="doRegister(event)">
+        <div class="form-group">
+          <label>Username</label>
+          <input id="tr-user" type="text" placeholder="e.g. ms_kermode" autocomplete="username" required pattern="[a-zA-Z0-9_]{3,30}">
+          <div class="hint">Letters, numbers, underscores only</div>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input id="tr-pass" type="password" autocomplete="new-password" placeholder="Minimum 6 characters" required minlength="6">
+        </div>
+        <button class="btn btn-secondary btn-full btn-lg" type="submit" id="btn-treg">Create Teacher Account</button>
+      </form>
+    </div>
+    <p style="text-align:center;margin-top:14px;font-size:.83rem;color:#94a3b8">
+      Are you a student? <a href="/student.html" style="color:var(--primary);font-weight:700">Student portal →</a>
+    </p>
+  </div>
+</div>
+
+<!-- ── App shell ──────────────────────────────────────────────────────────── -->
+<div id="t-shell" class="hidden">
+  <nav id="sidebar">
+    <div style="padding:16px 18px;border-bottom:2px solid var(--border)">
+      <div style="font-family:var(--font-h);font-size:.78rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Logged in as</div>
+      <div id="t-sidebar-user" style="font-family:var(--font-h);font-weight:800;font-size:.95rem">@teacher</div>
+    </div>
+    <div class="sidebar-nav">
+      <button class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')"><span class="ni">🏠</span> Dashboard</button>
+      <button class="nav-item" id="nav-classrooms" onclick="showPage('classrooms')"><span class="ni">🏫</span> Classrooms</button>
+      <button class="nav-item" id="nav-assignments" onclick="showPage('assignments')"><span class="ni">📋</span> Assignments</button>
+      <button class="nav-item" id="nav-progress" onclick="showPage('progress')"><span class="ni">📊</span> Progress</button>
+    </div>
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="doLogout()">← Log out</button>
+    </div>
+  </nav>
+
+  <main id="t-main">
+
+    <!-- Dashboard -->
+    <div id="page-dashboard" class="page">
+      <div class="page-header">
+        <h1 id="dash-greeting">Good morning!</h1>
+        <p>Here's an overview of your classes today.</p>
+      </div>
+      <div class="grid-3" id="stat-row" style="margin-bottom:22px"></div>
+      <div class="grid-2">
+        <div>
+          <div class="section-label">Your Classrooms</div>
+          <div id="dash-classrooms"></div>
+        </div>
+        <div>
+          <div class="section-label">Recent Test Activity</div>
+          <div class="card" id="dash-activity"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Classrooms list -->
+    <div id="page-classrooms" class="page">
+      <div class="page-header-row">
+        <div class="page-header" style="margin-bottom:0">
+          <h1>Classrooms</h1>
+          <p>Share the invite code with your students to let them join.</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modal-new-class')">+ New Classroom</button>
+      </div>
+      <div id="classrooms-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;margin-top:4px"></div>
+    </div>
+
+    <!-- Classroom detail -->
+    <div id="page-cls-detail" class="page">
+      <button class="back-btn" onclick="showPage('classrooms')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        All Classrooms
+      </button>
+      <div class="page-header-row">
+        <div class="page-header" style="margin-bottom:0"><h1 id="cls-detail-name">Class</h1></div>
+        <button class="btn btn-accent btn-sm" onclick="openModal('modal-new-asgn')">+ New Assignment</button>
+      </div>
+      <!-- Invite code always visible -->
+      <div class="invite-banner">
+        <div>
+          <div style="font-family:var(--font-h);font-size:.75rem;font-weight:700;color:var(--secondary-dark);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">Student Invite Code</div>
+          <div class="invite-code-display" id="cls-invite-code">——</div>
+          <div class="invite-sub">Students enter this in the Student Portal → Join your classroom</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="copyCode(document.getElementById('cls-invite-code').textContent)">Copy Code</button>
+      </div>
+      <div class="section-label">Students</div>
+      <div class="card" style="padding:8px 14px;margin-bottom:18px" id="cls-students-list"></div>
+      <div class="section-label">Assignments</div>
+      <div class="card" id="cls-assignments-list"></div>
+    </div>
+
+    <!-- Student detail -->
+    <div id="page-stu-detail" class="page">
+      <button class="back-btn" id="stu-back-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to Classroom
+      </button>
+      <div class="page-header"><h1 id="stu-detail-name">Student</h1></div>
+      <div class="grid-2" style="margin-bottom:18px" id="stu-stats-row"></div>
+      <div class="section-label">Unit Progress</div>
+      <div class="card" id="stu-unit-progress"></div>
+      <div class="section-label" style="margin-top:18px">Test Score History</div>
+      <div class="card">
+        <table class="data-table" style="width:100%">
+          <thead><tr><th>Unit</th><th>Attempts</th><th>Best</th><th>Last</th></tr></thead>
+          <tbody id="stu-test-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Assignments -->
+    <div id="page-assignments" class="page">
+      <div class="page-header-row">
+        <div class="page-header" style="margin-bottom:0"><h1>Assignments</h1><p>Assignments across all classrooms.</p></div>
+        <button class="btn btn-accent" onclick="openModal('modal-new-asgn')">+ New Assignment</button>
+      </div>
+      <div class="card" style="margin-top:4px">
+        <table class="data-table" style="width:100%">
+          <thead><tr><th>Title</th><th>Classroom</th><th>Unit</th><th>Due</th></tr></thead>
+          <tbody id="assignments-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div id="page-progress" class="page">
+      <div class="page-header"><h1>Class Progress</h1><p>Select a classroom to see all student progress.</p></div>
+      <div class="form-group" style="max-width:300px;margin-bottom:18px">
+        <label>Select Classroom</label>
+        <select id="prog-cls-select" onchange="renderProgressTable()">
+          <option value="">— Choose a classroom —</option>
+        </select>
+      </div>
+      <div class="card" id="progress-table-wrap">
+        <div class="empty-state"><span class="ei">📊</span><h3>Select a classroom</h3></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Modals ─────────────────────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="modal-new-class" onclick="closeBd(event,'modal-new-class')">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>🏫 New Classroom</h2>
+      <button class="modal-close" onclick="closeModal('modal-new-class')">✕</button>
+    </div>
+    <form onsubmit="submitNewClass(event)">
+      <div class="form-group">
+        <label>Classroom Name</label>
+        <input id="ncls-name" type="text" placeholder="e.g. Manx Class 4B" required>
+      </div>
+      <div id="ncls-err" class="error-msg"></div>
+      <button class="btn btn-primary btn-full" type="submit">Create Classroom</button>
+    </form>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-new-asgn" onclick="closeBd(event,'modal-new-asgn')">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>📋 New Assignment</h2>
+      <button class="modal-close" onclick="closeModal('modal-new-asgn')">✕</button>
+    </div>
+    <form onsubmit="submitNewAsgn(event)">
+      <div class="form-group">
+        <label>Title</label>
+        <input id="nasgn-title" type="text" placeholder="e.g. Complete Unit 1 Test" required>
+      </div>
+      <div class="form-group">
+        <label>Classroom</label>
+        <select id="nasgn-cls" required><option value="">— Choose classroom —</option></select>
+      </div>
+      <div class="form-group">
+        <label>Unit</label>
+        <select id="nasgn-unit" required>
+          <option value="">— Choose a unit —</option>
+          <option value="unit1">👋 Moylley — Greetings</option>
+          <option value="unit2">🔢 Earrooyn — Numbers</option>
+          <option value="unit3">🎨 Daahyn — Colours</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Due Date</label>
+        <input id="nasgn-due" type="date" required>
+      </div>
+      <div id="nasgn-err" class="error-msg"></div>
+      <button class="btn btn-accent btn-full" type="submit">Set Assignment</button>
+    </form>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="/js/api.js"></script>
+<script src="/js/teacher.js"></script>
+</body>
+</html>
