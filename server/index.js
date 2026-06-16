@@ -1,21 +1,23 @@
 'use strict';
-const express    = require('express');
-const bcrypt     = require('bcryptjs');
-const jwt        = require('jsonwebtoken');
+const express      = require('express');
+const bcrypt       = require('bcryptjs');
+const jwt          = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
-const path       = require('path');
-const { getDb }  = require('./db');
+const path         = require('path');
+const { sql, initSchema } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 4325;
-// Change JWT_SECRET via environment variable in production
 const JWT_SECRET = process.env.JWT_SECRET || 'manxlearn-demo-change-this-in-production-32chars';
 
 app.use(express.json({ limit: '50kb' }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../public')));
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// Run schema once at cold-start; all routes await this promise
+const ready = initSchema().catch(err => { console.error('Schema init failed:', err); process.exit(1); });
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function uid(prefix) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 }
@@ -23,10 +25,7 @@ function uid(prefix) {
 function setToken(res, payload) {
   const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
   res.cookie('ml_token', token, {
-    httpOnly: true,
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    // secure: true  // Uncomment when serving over HTTPS
+    httpOnly: true, sameSite: 'strict', maxAge: 7 * 24 * 60 * 60 * 1000
   });
 }
 
@@ -34,13 +33,8 @@ function setToken(res, payload) {
 function auth(req, res, next) {
   const token = req.cookies.ml_token;
   if (!token) return res.status(401).json({ error: 'Not authenticated' });
-  try {
-    req.user = jwt.verify(token, JWT_SECRET);
-    next();
-  } catch {
-    res.clearCookie('ml_token');
-    res.status(401).json({ error: 'Session expired — please log in again' });
-  }
+  try { req.user = jwt.verify(token, JWT_SECRET); next(); }
+  catch { res.clearCookie('ml_token'); res.status(401).json({ error: 'Session expired — please log in again' }); }
 }
 
 function teacherOnly(req, res, next) {
@@ -57,40 +51,37 @@ function studentOnly(req, res, next) {
   });
 }
 
-// ── Auth routes ───────────────────────────────────────────────────────────────
+// ── Auth ──────────────────────────────────────────────────────────────────────
 app.post('/api/auth/register', async (req, res) => {
+  await ready;
   const { username, password, role } = req.body || {};
   if (!username || !password || !role) return res.status(400).json({ error: 'Missing fields' });
-  if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) return res.status(400).json({ error: 'Username must be 3–30 alphanumeric characters or underscores' });
-  if (password.length < 6 || password.length > 128) return res.status(400).json({ error: 'Password must be 6–128 characters' });
+  if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) return res.status(400).json({ error: 'Username: 3–30 letters, numbers or underscores' });
+  if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
   if (!['student', 'teacher'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
-
-  const db = getDb();
-  if (db.prepare('SELECT id FROM users WHERE username = ?').get(username)) {
-    return res.status(409).json({ error: 'Username already taken' });
-  }
-
-  const passwordHash = await bcrypt.hash(password, 12);
-  const id = uid('u');
-  db.prepare('INSERT INTO users (id, username, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?)').run(id, username, passwordHash, role, new Date().toISOString());
-
-  setToken(res, { userId: id, username, role });
-  res.json({ user: { id, username, role } });
+  try {
+    const [existing] = await sql`SELECT id FROM users WHERE username = ${username}`;
+    if (existing) return res.status(409).json({ error: 'Username already taken' });
+    const passwordHash = await bcrypt.hash(password, 12);
+    const id = uid('u');
+    await sql`INSERT INTO users (id, username, password_hash, role, created_at) VALUES (${id}, ${username}, ${passwordHash}, ${role}, ${new Date().toISOString()})`;
+    setToken(res, { userId: id, username, role });
+    res.json({ user: { id, username, role } });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
 });
 
 app.post('/api/auth/login', async (req, res) => {
+  await ready;
   const { username, password } = req.body || {};
   if (!username || !password) return res.status(400).json({ error: 'Missing credentials' });
-
-  const db = getDb();
-  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
-  if (!user) return res.status(401).json({ error: 'Username not found' });
-
-  const valid = await bcrypt.compare(password, user.password_hash);
-  if (!valid) return res.status(401).json({ error: 'Incorrect password' });
-
-  setToken(res, { userId: user.id, username: user.username, role: user.role });
-  res.json({ user: { id: user.id, username: user.username, role: user.role } });
+  try {
+    const [user] = await sql`SELECT * FROM users WHERE username = ${username}`;
+    if (!user) return res.status(401).json({ error: 'Username not found' });
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) return res.status(401).json({ error: 'Incorrect password' });
+    setToken(res, { userId: user.id, username: user.username, role: user.role });
+    res.json({ user: { id: user.id, username: user.username, role: user.role } });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
 });
 
 app.post('/api/auth/logout', (req, res) => {
@@ -102,195 +93,205 @@ app.get('/api/auth/me', auth, (req, res) => {
   res.json({ user: { userId: req.user.userId, username: req.user.username, role: req.user.role } });
 });
 
-// ── Curriculum (served from server so codes cannot be tampered client-side) ──
+// ── Curriculum ────────────────────────────────────────────────────────────────
 app.get('/api/curriculum', auth, (req, res) => res.json(CURRICULUM));
 
 // ── Progress ──────────────────────────────────────────────────────────────────
-app.get('/api/progress', auth, (req, res) => {
-  const db = getDb();
-  const rows  = db.prepare('SELECT * FROM progress WHERE user_id = ?').all(req.user.userId);
-  const scores = db.prepare('SELECT * FROM test_scores WHERE user_id = ?').all(req.user.userId);
-  const data  = rows.map(r => ({
-    unitId: r.unit_id,
-    lessonsCompleted: JSON.parse(r.lessons_completed),
-    xp: r.xp,
-    testScores: scores
-      .filter(s => s.unit_id === r.unit_id)
-      .map(s => ({ score: s.score, date: s.taken_at.split('T')[0] }))
-  }));
-  res.json(data);
+app.get('/api/progress', auth, async (req, res) => {
+  await ready;
+  try {
+    const rows   = await sql`SELECT * FROM progress WHERE user_id = ${req.user.userId}`;
+    const scores = await sql`SELECT * FROM test_scores WHERE user_id = ${req.user.userId}`;
+    res.json(rows.map(r => ({
+      unitId: r.unit_id,
+      lessonsCompleted: JSON.parse(r.lessons_completed),
+      xp: r.xp,
+      testScores: scores.filter(s => s.unit_id === r.unit_id).map(s => ({ score: s.score, date: s.taken_at.split('T')[0] }))
+    })));
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
 });
 
-app.post('/api/progress/lesson', auth, (req, res) => {
+app.post('/api/progress/lesson', auth, async (req, res) => {
+  await ready;
   const { unitId, lessonId } = req.body || {};
   if (!unitId || !lessonId) return res.status(400).json({ error: 'Missing fields' });
-  const db = getDb();
-  let row = db.prepare('SELECT * FROM progress WHERE user_id = ? AND unit_id = ?').get(req.user.userId, unitId);
-  if (!row) {
-    db.prepare('INSERT INTO progress (id,user_id,unit_id,lessons_completed,xp) VALUES (?,?,?,?,?)').run(uid('p'), req.user.userId, unitId, '[]', 0);
-    row = db.prepare('SELECT * FROM progress WHERE user_id = ? AND unit_id = ?').get(req.user.userId, unitId);
-  }
-  const lessons = JSON.parse(row.lessons_completed);
-  if (!lessons.includes(lessonId)) {
-    lessons.push(lessonId);
-    db.prepare('UPDATE progress SET lessons_completed=?, xp=xp+20 WHERE user_id=? AND unit_id=?').run(JSON.stringify(lessons), req.user.userId, unitId);
-  }
-  res.json({ ok: true });
+  try {
+    const [row] = await sql`SELECT * FROM progress WHERE user_id = ${req.user.userId} AND unit_id = ${unitId}`;
+    if (!row) {
+      await sql`INSERT INTO progress (id, user_id, unit_id, lessons_completed, xp) VALUES (${uid('p')}, ${req.user.userId}, ${unitId}, ${JSON.stringify([lessonId])}, 20)`;
+    } else {
+      const lessons = JSON.parse(row.lessons_completed);
+      if (!lessons.includes(lessonId)) {
+        lessons.push(lessonId);
+        await sql`UPDATE progress SET lessons_completed = ${JSON.stringify(lessons)}, xp = xp + 20 WHERE user_id = ${req.user.userId} AND unit_id = ${unitId}`;
+      }
+    }
+    res.json({ ok: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
 });
 
-app.post('/api/progress/test', auth, (req, res) => {
+app.post('/api/progress/test', auth, async (req, res) => {
+  await ready;
   const { unitId, score } = req.body || {};
   if (!unitId || score == null || score < 0 || score > 100) return res.status(400).json({ error: 'Invalid data' });
-  const db = getDb();
   const xpGain = Math.floor(score / 10) * 5;
-  db.prepare('INSERT INTO test_scores (id,user_id,unit_id,score,taken_at) VALUES (?,?,?,?,?)').run(uid('ts'), req.user.userId, unitId, score, new Date().toISOString());
-  const row = db.prepare('SELECT id FROM progress WHERE user_id=? AND unit_id=?').get(req.user.userId, unitId);
-  if (row) {
-    db.prepare('UPDATE progress SET xp=xp+? WHERE user_id=? AND unit_id=?').run(xpGain, req.user.userId, unitId);
-  } else {
-    db.prepare('INSERT INTO progress (id,user_id,unit_id,lessons_completed,xp) VALUES (?,?,?,?,?)').run(uid('p'), req.user.userId, unitId, '[]', xpGain);
-  }
-  res.json({ ok: true });
+  try {
+    await sql`INSERT INTO test_scores (id, user_id, unit_id, score, taken_at) VALUES (${uid('ts')}, ${req.user.userId}, ${unitId}, ${score}, ${new Date().toISOString()})`;
+    const [row] = await sql`SELECT id FROM progress WHERE user_id = ${req.user.userId} AND unit_id = ${unitId}`;
+    if (row) {
+      await sql`UPDATE progress SET xp = xp + ${xpGain} WHERE user_id = ${req.user.userId} AND unit_id = ${unitId}`;
+    } else {
+      await sql`INSERT INTO progress (id, user_id, unit_id, lessons_completed, xp) VALUES (${uid('p')}, ${req.user.userId}, ${unitId}, '[]', ${xpGain})`;
+    }
+    res.json({ ok: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
 });
 
 // ── Classrooms ────────────────────────────────────────────────────────────────
-app.get('/api/classrooms', teacherOnly, (req, res) => {
-  const db = getDb();
-  const cls = db.prepare('SELECT * FROM classrooms WHERE teacher_id=?').all(req.user.userId);
-  const result = cls.map(c => {
-    const students = db.prepare('SELECT student_id FROM classroom_students WHERE classroom_id=?').all(c.id);
-    return { ...c, studentIds: students.map(s => s.student_id) };
-  });
-  res.json(result);
+app.get('/api/classrooms', teacherOnly, async (req, res) => {
+  await ready;
+  try {
+    const cls = await sql`SELECT * FROM classrooms WHERE teacher_id = ${req.user.userId}`;
+    const result = await Promise.all(cls.map(async c => {
+      const students = await sql`SELECT student_id FROM classroom_students WHERE classroom_id = ${c.id}`;
+      return { ...c, studentIds: students.map(s => s.student_id) };
+    }));
+    res.json(result);
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
 });
 
-app.post('/api/classrooms', teacherOnly, (req, res) => {
+app.post('/api/classrooms', teacherOnly, async (req, res) => {
+  await ready;
   const { name } = req.body || {};
-  if (!name || name.trim().length < 2) return res.status(400).json({ error: 'Classroom name required (min 2 chars)' });
-  const db = getDb();
-  const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-  const id = uid('cls');
-  db.prepare('INSERT INTO classrooms (id,name,teacher_id,invite_code,created_at) VALUES (?,?,?,?,?)').run(id, name.trim(), req.user.userId, code, new Date().toISOString());
-  res.json({ id, name: name.trim(), teacherId: req.user.userId, inviteCode: code, studentIds: [] });
+  if (!name || name.trim().length < 2) return res.status(400).json({ error: 'Classroom name required' });
+  try {
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const id = uid('cls');
+    await sql`INSERT INTO classrooms (id, name, teacher_id, invite_code, created_at) VALUES (${id}, ${name.trim()}, ${req.user.userId}, ${code}, ${new Date().toISOString()})`;
+    res.json({ id, name: name.trim(), teacherId: req.user.userId, inviteCode: code, studentIds: [] });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
 });
 
-app.post('/api/classrooms/join', studentOnly, (req, res) => {
-  const raw = (req.body?.inviteCode || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+app.post('/api/classrooms/join', studentOnly, async (req, res) => {
+  await ready;
+  const raw = ((req.body?.inviteCode) || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (!raw) return res.status(400).json({ error: 'Invite code required' });
-  const db = getDb();
-  const cls = db.prepare('SELECT * FROM classrooms WHERE invite_code=?').get(raw);
-  if (!cls) return res.status(404).json({ error: 'Invalid invite code — check with your teacher' });
-  const already = db.prepare('SELECT 1 FROM classroom_students WHERE classroom_id=? AND student_id=?').get(cls.id, req.user.userId);
-  if (!already) {
-    db.prepare('INSERT INTO classroom_students (classroom_id,student_id,joined_at) VALUES (?,?,?)').run(cls.id, req.user.userId, new Date().toISOString());
-  }
-  res.json({ classroom: { id: cls.id, name: cls.name, inviteCode: cls.invite_code } });
+  try {
+    const [cls] = await sql`SELECT * FROM classrooms WHERE invite_code = ${raw}`;
+    if (!cls) return res.status(404).json({ error: 'Invalid invite code — check with your teacher' });
+    const [already] = await sql`SELECT 1 FROM classroom_students WHERE classroom_id = ${cls.id} AND student_id = ${req.user.userId}`;
+    if (!already) {
+      await sql`INSERT INTO classroom_students (classroom_id, student_id, joined_at) VALUES (${cls.id}, ${req.user.userId}, ${new Date().toISOString()})`;
+    }
+    res.json({ classroom: { id: cls.id, name: cls.name, inviteCode: cls.invite_code } });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
 });
 
-app.get('/api/classrooms/:id', teacherOnly, (req, res) => {
-  const db = getDb();
-  const cls = db.prepare('SELECT * FROM classrooms WHERE id=? AND teacher_id=?').get(req.params.id, req.user.userId);
-  if (!cls) return res.status(404).json({ error: 'Classroom not found' });
-  const students = db.prepare(`SELECT u.id, u.username, u.created_at FROM users u JOIN classroom_students cs ON cs.student_id=u.id WHERE cs.classroom_id=?`).all(cls.id);
-  const assignments = db.prepare('SELECT * FROM assignments WHERE classroom_id=?').all(cls.id);
-  res.json({ ...cls, students, assignments });
+app.get('/api/classrooms/:id', teacherOnly, async (req, res) => {
+  await ready;
+  try {
+    const [cls] = await sql`SELECT * FROM classrooms WHERE id = ${req.params.id} AND teacher_id = ${req.user.userId}`;
+    if (!cls) return res.status(404).json({ error: 'Classroom not found' });
+    const students = await sql`SELECT u.id, u.username, u.created_at FROM users u JOIN classroom_students cs ON cs.student_id = u.id WHERE cs.classroom_id = ${cls.id}`;
+    const assignments = await sql`SELECT * FROM assignments WHERE classroom_id = ${cls.id}`;
+    res.json({ ...cls, students, assignments });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
 });
 
-app.get('/api/classrooms/:id/progress', teacherOnly, (req, res) => {
-  const db = getDb();
-  const cls = db.prepare('SELECT id FROM classrooms WHERE id=? AND teacher_id=?').get(req.params.id, req.user.userId);
-  if (!cls) return res.status(403).json({ error: 'Not your classroom' });
-  const students = db.prepare(`SELECT u.id, u.username FROM users u JOIN classroom_students cs ON cs.student_id=u.id WHERE cs.classroom_id=?`).all(req.params.id);
-  const result = students.map(s => {
-    const prog  = db.prepare('SELECT * FROM progress WHERE user_id=?').all(s.id);
-    const scores = db.prepare('SELECT * FROM test_scores WHERE user_id=? ORDER BY taken_at DESC').all(s.id);
-    return {
-      id: s.id, username: s.username,
-      totalXP: prog.reduce((n, p) => n + p.xp, 0),
-      progress: prog.map(p => ({ unitId: p.unit_id, lessonsCompleted: JSON.parse(p.lessons_completed), xp: p.xp })),
-      testScores: scores.map(sc => ({ unitId: sc.unit_id, score: sc.score, date: sc.taken_at.split('T')[0] }))
-    };
-  });
-  res.json(result);
-});
-
-// ── Assignments ───────────────────────────────────────────────────────────────
-app.get('/api/assignments', auth, (req, res) => {
-  const db = getDb();
-  if (req.user.role === 'teacher') {
-    const ids = db.prepare('SELECT id FROM classrooms WHERE teacher_id=?').all(req.user.userId).map(c => c.id);
-    if (!ids.length) return res.json([]);
-    const ph = ids.map(() => '?').join(',');
-    return res.json(db.prepare(`SELECT * FROM assignments WHERE classroom_id IN (${ph})`).all(...ids));
-  }
-  const mem = db.prepare('SELECT classroom_id FROM classroom_students WHERE student_id=?').get(req.user.userId);
-  if (!mem) return res.json([]);
-  res.json(db.prepare('SELECT * FROM assignments WHERE classroom_id=?').all(mem.classroom_id));
-});
-
-app.post('/api/assignments', teacherOnly, (req, res) => {
-  const { classroomId, unitId, title, dueDate } = req.body || {};
-  if (!classroomId || !unitId || !title || !dueDate) return res.status(400).json({ error: 'Missing fields' });
-  const db = getDb();
-  if (!db.prepare('SELECT id FROM classrooms WHERE id=? AND teacher_id=?').get(classroomId, req.user.userId)) {
-    return res.status(403).json({ error: 'Not your classroom' });
-  }
-  const id = uid('asgn');
-  db.prepare('INSERT INTO assignments (id,classroom_id,unit_id,title,due_date,created_at) VALUES (?,?,?,?,?,?)').run(id, classroomId, unitId, title, dueDate, new Date().toISOString());
-  res.json({ id, classroomId, unitId, title, dueDate });
-});
-
-// ── Teacher overview (dashboard stats) ────────────────────────────────────────
-app.get('/api/teacher/overview', teacherOnly, (req, res) => {
-  const db = getDb();
-  const classrooms = db.prepare('SELECT * FROM classrooms WHERE teacher_id=?').all(req.user.userId);
-  const result = classrooms.map(cls => {
-    const students = db.prepare(`SELECT u.id, u.username FROM users u JOIN classroom_students cs ON cs.student_id=u.id WHERE cs.classroom_id=?`).all(cls.id);
-    const studentData = students.map(s => {
-      const prog   = db.prepare('SELECT * FROM progress WHERE user_id=?').all(s.id);
-      const scores = db.prepare('SELECT * FROM test_scores WHERE user_id=? ORDER BY taken_at DESC').all(s.id);
+app.get('/api/classrooms/:id/progress', teacherOnly, async (req, res) => {
+  await ready;
+  try {
+    const [cls] = await sql`SELECT id FROM classrooms WHERE id = ${req.params.id} AND teacher_id = ${req.user.userId}`;
+    if (!cls) return res.status(403).json({ error: 'Not your classroom' });
+    const students = await sql`SELECT u.id, u.username FROM users u JOIN classroom_students cs ON cs.student_id = u.id WHERE cs.classroom_id = ${req.params.id}`;
+    const result = await Promise.all(students.map(async s => {
+      const prog   = await sql`SELECT * FROM progress WHERE user_id = ${s.id}`;
+      const scores = await sql`SELECT * FROM test_scores WHERE user_id = ${s.id} ORDER BY taken_at DESC`;
       return {
         id: s.id, username: s.username,
         totalXP: prog.reduce((n, p) => n + p.xp, 0),
         progress: prog.map(p => ({ unitId: p.unit_id, lessonsCompleted: JSON.parse(p.lessons_completed), xp: p.xp })),
         testScores: scores.map(sc => ({ unitId: sc.unit_id, score: sc.score, date: sc.taken_at.split('T')[0] }))
       };
-    });
-    const allScores = studentData.flatMap(s => s.testScores);
-    return {
-      id: cls.id, name: cls.name, inviteCode: cls.invite_code, createdAt: cls.created_at,
-      studentCount: students.length,
-      testsTaken: allScores.length,
-      students: studentData
-    };
-  });
-  res.json(result);
+    }));
+    res.json(result);
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
 });
 
-// Student: get their classroom info
-app.get('/api/student/classroom', studentOnly, (req, res) => {
-  const db = getDb();
-  const mem = db.prepare('SELECT classroom_id FROM classroom_students WHERE student_id=?').get(req.user.userId);
-  if (!mem) return res.json(null);
-  const cls = db.prepare('SELECT id, name, invite_code FROM classrooms WHERE id=?').get(mem.classroom_id);
-  const asgns = db.prepare('SELECT * FROM assignments WHERE classroom_id=?').all(mem.classroom_id);
-  res.json({ id: cls.id, name: cls.name, inviteCode: cls.invite_code, assignments: asgns });
+// ── Assignments ───────────────────────────────────────────────────────────────
+app.get('/api/assignments', auth, async (req, res) => {
+  await ready;
+  try {
+    if (req.user.role === 'teacher') {
+      const ids = (await sql`SELECT id FROM classrooms WHERE teacher_id = ${req.user.userId}`).map(c => c.id);
+      if (!ids.length) return res.json([]);
+      return res.json(await sql`SELECT * FROM assignments WHERE classroom_id = ANY(${ids})`);
+    }
+    const [mem] = await sql`SELECT classroom_id FROM classroom_students WHERE student_id = ${req.user.userId}`;
+    if (!mem) return res.json([]);
+    res.json(await sql`SELECT * FROM assignments WHERE classroom_id = ${mem.classroom_id}`);
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
 });
 
-// SPA fallback for clean URLs
+app.post('/api/assignments', teacherOnly, async (req, res) => {
+  await ready;
+  const { classroomId, unitId, title, dueDate } = req.body || {};
+  if (!classroomId || !unitId || !title || !dueDate) return res.status(400).json({ error: 'Missing fields' });
+  try {
+    const [cls] = await sql`SELECT id FROM classrooms WHERE id = ${classroomId} AND teacher_id = ${req.user.userId}`;
+    if (!cls) return res.status(403).json({ error: 'Not your classroom' });
+    const id = uid('asgn');
+    await sql`INSERT INTO assignments (id, classroom_id, unit_id, title, due_date, created_at) VALUES (${id}, ${classroomId}, ${unitId}, ${title}, ${dueDate}, ${new Date().toISOString()})`;
+    res.json({ id, classroomId, unitId, title, dueDate });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── Teacher overview ──────────────────────────────────────────────────────────
+app.get('/api/teacher/overview', teacherOnly, async (req, res) => {
+  await ready;
+  try {
+    const classrooms = await sql`SELECT * FROM classrooms WHERE teacher_id = ${req.user.userId}`;
+    const result = await Promise.all(classrooms.map(async cls => {
+      const students = await sql`SELECT u.id, u.username FROM users u JOIN classroom_students cs ON cs.student_id = u.id WHERE cs.classroom_id = ${cls.id}`;
+      const studentData = await Promise.all(students.map(async s => {
+        const prog   = await sql`SELECT * FROM progress WHERE user_id = ${s.id}`;
+        const scores = await sql`SELECT * FROM test_scores WHERE user_id = ${s.id} ORDER BY taken_at DESC`;
+        return {
+          id: s.id, username: s.username,
+          totalXP: prog.reduce((n, p) => n + p.xp, 0),
+          progress: prog.map(p => ({ unitId: p.unit_id, lessonsCompleted: JSON.parse(p.lessons_completed), xp: p.xp })),
+          testScores: scores.map(sc => ({ unitId: sc.unit_id, score: sc.score, date: sc.taken_at.split('T')[0] }))
+        };
+      }));
+      return { id: cls.id, name: cls.name, inviteCode: cls.invite_code, createdAt: cls.created_at, studentCount: students.length, testsTaken: studentData.flatMap(s => s.testScores).length, students: studentData };
+    }));
+    res.json(result);
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── Student classroom ─────────────────────────────────────────────────────────
+app.get('/api/student/classroom', studentOnly, async (req, res) => {
+  await ready;
+  try {
+    const [mem] = await sql`SELECT classroom_id FROM classroom_students WHERE student_id = ${req.user.userId}`;
+    if (!mem) return res.json(null);
+    const [cls] = await sql`SELECT id, name, invite_code FROM classrooms WHERE id = ${mem.classroom_id}`;
+    const asgns = await sql`SELECT * FROM assignments WHERE classroom_id = ${mem.classroom_id}`;
+    res.json({ id: cls.id, name: cls.name, inviteCode: cls.invite_code, assignments: asgns });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── SPA clean URLs ────────────────────────────────────────────────────────────
 app.get('/student', (req, res) => res.sendFile(path.join(__dirname, '../public/student.html')));
 app.get('/teacher', (req, res) => res.sendFile(path.join(__dirname, '../public/teacher.html')));
 
-// Export for Vercel serverless; listen only when running locally
+// Export for Vercel; only listen locally
 if (!process.env.VERCEL) {
-  app.listen(PORT, () => {
-    console.log(`\n🦤 ManxLearn running → http://localhost:${PORT}\n`);
-  });
+  app.listen(PORT, () => console.log(`\n🦤 ManxLearn → http://localhost:${PORT}\n`));
 }
-
 module.exports = app;
 
-// ── Curriculum data ────────────────────────────────────────────────────────────
+// ── Curriculum ────────────────────────────────────────────────────────────────
 const CURRICULUM = [
   {
     id:'unit1', title:'Moylley — Greetings', emoji:'👋',
@@ -311,7 +312,7 @@ const CURRICULUM = [
       },
       { id:'milestone_1', title:'Grammar Milestone', type:'milestone',
         concept:'Manx Greetings & Time of Day',
-        explanation:`In Manx, greetings change based on the time of day — just like in English! "Moghrey" means morning, "Fastyr" means afternoon/evening, and "Oie" means night. Combine these with "mie" (good) to make greetings. When you say goodbye, "Slane lhiat" literally means "Health be with you!"`,
+        explanation:`In Manx, greetings change based on the time of day. "Moghrey" means morning, "Fastyr" means afternoon/evening, and "Oie" means night. Combine these with "mie" (good) to make greetings. "Slane lhiat" literally means "Health be with you!"`,
         teacherNote:'Students often mix up Fastyr mie (afternoon) and Oie vie (night). Try role-play greetings at different times of day.'
       }
     ],
@@ -335,8 +336,8 @@ const CURRICULUM = [
       },
       { id:'milestone_2', title:'Grammar Milestone', type:'milestone',
         concept:'How Manx Counting Works',
-        explanation:`Manx uses a traditional Celtic counting system. "Tree" (three) sounds similar to English — both come from the same ancient roots! Old Manx counted in groups of twenty (like French), so 40 is "daa feed" meaning "two twenties". This vigesimal system is fascinating. For now, master 1–10 and you're doing brilliantly!`,
-        teacherNote:'The vigesimal system fascinates older learners. Stick to 1-10 for this age group but mention it as a fun fact.'
+        explanation:`Manx uses a traditional Celtic counting system. Old Manx counted in groups of twenty (like French), so 40 is "daa feed" meaning "two twenties". This vigesimal system is fascinating — master 1–10 first and you are doing brilliantly!`,
+        teacherNote:'Mention the vigesimal system as a fun fact for curious learners.'
       }
     ],
     test:{ questions:[
@@ -344,7 +345,7 @@ const CURRICULUM = [
       {q:'How do you say "Seven" in Manx?', options:['Shey','Hoght','Shiaght','Nuy'], answer:2},
       {q:'What number is "Queig"?', options:['3','4','5','6'], answer:2},
       {q:'"Jeih" means…', options:['Eight','Nine','Ten','Seven'], answer:2},
-      {q:'Which of these is NOT a Manx number?', options:['Nane','Kiare','Moghrey','Nuy'], answer:2}
+      {q:'Which is NOT a Manx number?', options:['Nane','Kiare','Moghrey','Nuy'], answer:2}
     ]}
   },
   {
@@ -363,8 +364,8 @@ const CURRICULUM = [
       },
       { id:'milestone_3', title:'Grammar Milestone', type:'milestone',
         concept:'Adjectives & Lenition in Manx',
-        explanation:`In Manx, adjectives come AFTER the noun — opposite to English! "Red car" becomes "gleashtan jiarg" (literally "car red"). There is also LENITION, a softening rule where the first letter of a word changes sound after certain words. For example "mooar" (big) can become "vooar". You will learn this gradually — your brain is amazing at spotting patterns!`,
-        teacherNote:'Lenition is a key Celtic grammar feature. Introduce gently — recognition before production. Use flashcards with before/after pairs.'
+        explanation:`In Manx, adjectives come AFTER the noun — the opposite of English! "Red car" becomes "gleashtan jiarg" (literally "car red"). There is also LENITION where the first letter of a word softens after certain words. You will learn this gradually — your brain is great at spotting patterns!`,
+        teacherNote:'Introduce lenition gently — recognition before production. Use flashcards with before/after pairs.'
       }
     ],
     test:{ questions:[
